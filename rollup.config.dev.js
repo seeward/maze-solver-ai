@@ -44,7 +44,8 @@ export default {
         commonjs({
             include: [
                 'node_modules/eventemitter3/**',
-                'node_modules/phaser/**'
+                'node_modules/phaser/**',
+                'node_modules/**'
             ],
             exclude: [ 
                 'node_modules/phaser/src/polyfills/requestAnimationFrame.js'
@@ -56,6 +57,7 @@ export default {
         //  See https://www.npmjs.com/package/rollup-plugin-typescript2 for config options
         typescript(),
 
+          
         //  See https://www.npmjs.com/package/rollup-plugin-serve for config options
         serve({
             open: true,
