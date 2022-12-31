@@ -28,6 +28,7 @@ export class Agent extends Phaser.GameObjects.Sprite {
     constructor(scene: Phaser.Scene, x: number = 0, y: number = 0, color: number = 0xffffff, cb: Function, id: number) {
         super(scene, x, y, 'agent');
         this.id = id;
+        console.log(`Agent ${this.id} created`);
         this.scene = scene;
         this.x = x;
         this.y = y;
@@ -37,9 +38,12 @@ export class Agent extends Phaser.GameObjects.Sprite {
         // this.draw();
     }
     draw() {
-        this.makeTexture();
-        this.agent = this.scene.add.sprite(this.x, this.y, `${this.id}_texture`).setOrigin(0).setDepth(15);
-        this.agent.anims.play(`${this.id}_walk`);
+        if(this.scene){
+            // this.makeTexture();
+            this.agent = this.scene.add.sprite(this.x, this.y, `mouse_texture`).setOrigin(0).setDepth(15);
+            this.agent.anims.play(`walk`);
+        }
+        
     }
     makeTexture(){
         // create a texture from a string array of colors
@@ -65,41 +69,28 @@ export class Agent extends Phaser.GameObjects.Sprite {
     }
     createAnimation(){
        
-        let frame_2 = [
-            ".11.11..",
-            "1441441.",
-            "1411141.",
-            ".11111..",
-            ".10101..",
-            ".11211..",
-            "111111.4",
-            "11111144"
-        ];
+       
         let frame_3 = [
             ".11.11..",
             "1441441.",
-            "1411141.",
+            "1441441.",
             ".11111..",
             ".10101..",
             ".11211..",
             "111111.4",
-            "11111144"
+            "10111144"
         ];
         let frame_4 = [
             ".11.11..",
             "1441441.",
-            "1411141.",
+            "1441441.",
             ".11111..",
             ".10101..",
             ".11211..",
             "111111.4",
-            "11111144"
+            "11110144"
         ];
 
-        this.scene.textures.generate(`${this.id}_ani2`, {
-            data : frame_2,
-            pixelWidth : 8
-        });
         this.scene.textures.generate(`${this.id}_ani3`, {
             data : frame_3,
             pixelWidth : 8
@@ -112,11 +103,10 @@ export class Agent extends Phaser.GameObjects.Sprite {
         this.scene.anims.create({
             key: `${this.id}_walk`,
             frames: [
-                { key: `${this.id}_ani3`, frame: `${this.id}_ani02` },
-                { key: `${this.id}_ani2`, frame: `${this.id}_ani03` },
-                { key: `${this.id}_ani4`, frame: `${this.id}_ani04` },
+                { key: `${this.id}_ani3`, frame: `${this.id}_ani03` },
+                { key: `${this.id}_ani4`, frame: `${this.id}_ani04` }
             ],
-            frameRate: 7,
+            frameRate: 2,
             repeat: -1
         });
     }
@@ -144,6 +134,8 @@ export class Agent extends Phaser.GameObjects.Sprite {
             this.endingQ = cell.getQ();
             // console.log(`Agent ${this.id} from too many moves: ${this.history.length}`);
             this.cb(cell.getQ(), this.moves, this.id, false)
+            console.log(`Agent ${this.id} died from too many moves.`);
+            this.makeExplosion();
             // document.getElementById(`stats`).innerHTML = `Agent ${this.id} Score: ${this.score}`;
             // document.getElementById(`historystats`).innerHTML += `<li>Agent ${this.id} Q:${this.endingQ} M:${this.moves}</li>`;
             // localStorage.setItem(`agent_${this.id}`, JSON.stringify(this.history));
@@ -153,8 +145,9 @@ export class Agent extends Phaser.GameObjects.Sprite {
         
         if(cell.id === 99){
             // winner
+            this.scene.sound.play('win', { volume: 0.15 });
             this.alive = false;
-            console.log(`Agent ${this.id} moved to Cell: ${cell.id}`);
+            console.log(`🕵🏻‍♀️ ${this.id} made it to the 🧀!`);
             
             // document.getElementById(`stats`).innerHTML = `Agent ${this.id} is the Winner!`;
             // localStorage.setItem(`agent_${this.id}`, JSON.stringify(this.history));
@@ -170,11 +163,17 @@ export class Agent extends Phaser.GameObjects.Sprite {
             // console.log(`history: ${this.history.length}`);
             // this.history[this.history.length - 1].cell.updateStatus(4);
         } else {
-
+            this.scene.sound.play('pop', { volume: 0.15 });
+            cell.setColor(0xff0000);
+            setTimeout(() => {
+                cell.setColor(0xBCDEE6);
+            },100);
             this.alive = false;
             this.endingQ = cell.getQ();
             // console.log(`Agent ${this.id} died at Cell: ${cell.id}`);
             this.cb(cell.getQ(), this.moves, this.id, false)
+            this.makeExplosion();
+            console.log(`Agent ${this.id} died at cell: ${cell.id}`);
             // document.getElementById(`stats`).innerHTML = `Agent ${this.id} Score: ${this.score}`;
             // document.getElementById(`historystats`).innerHTML += `<li>Agent ${this.id} Q:${this.endingQ} M:${this.moves}</li>`;
             // localStorage.setItem(`agent_${this.id}`, JSON.stringify(this.history));
@@ -191,6 +190,7 @@ export class Agent extends Phaser.GameObjects.Sprite {
             return true
         } else {
             this.agent.destroy();
+            
             return false
         } 
         
@@ -213,6 +213,13 @@ export class Agent extends Phaser.GameObjects.Sprite {
 
 
 
+    }
+    makeExplosion(){
+        let explosion = this.scene.add.sprite(this.x + 25, this.y + 50, `explosion`);
+        explosion.anims.play(`explode`);
+        explosion.on('animationcomplete', () => {
+            explosion.destroy();
+        });
     }
     update() {
         this.agent.x = this.x;

@@ -19,9 +19,9 @@ export class Target extends Phaser.GameObjects.Ellipse {
             let bar = [
                 "........",
                 "........",
-                ".....888",
+                "....8888",
                 "...88778",
-                ".8888788",
+                ".8887788",
                 "88777778",
                 "87787778",
                 "88888888"
@@ -38,7 +38,7 @@ export class Target extends Phaser.GameObjects.Ellipse {
     draw() {
 
         this.createTexture();
-        this.target = this.scene.add.sprite(this.x, this.y, `cheese`).setOrigin(0).setDepth(15);
+        this.target = this.scene.add.sprite(this.x + 10, this.y + 10, `cheese`).setOrigin(0).setDepth(25);
         // console.log(`target: ${this.x}, ${this.y}`);
         // this.target = this.scene.add.ellipse(this.x + 10, this.y + 10, 75, 75, 0xff0000).setOrigin(0).setDepth(10);
         // let w = this.scene.add.ellipse(this.x + 25, this.y + 25, 50, 50, 0xffffff).setOrigin(0).setDepth(10);

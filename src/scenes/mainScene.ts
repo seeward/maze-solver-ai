@@ -1,4 +1,3 @@
-import { SleepingFactory } from 'matter';
 import 'phaser';
 import { Agent } from '../assets/agent';
 import { MainGrid } from '../assets/grid';
@@ -8,25 +7,37 @@ import { MazeSolver } from './brain';
 const timer = ms => new Promise(res => setTimeout(res, ms))
 const PERCENT_LEARNED = document.getElementById('boardPercentLearned');
 const AGENTS_HEALTH = document.getElementById('agentsHealth');
-
+const FAST_MODE = document.getElementById('fastmode');
+console.log((FAST_MODE as any).value);
+FAST_MODE.addEventListener('change', (e) => {
+    fastMode = (e.target as any).checked;
+})
 const DATA_COUNT = document.getElementById('dataCount');
+const PREDICTION = document.getElementById('prediction');
 const AI_STATUS = document.getElementById('aiStatus');
-// const TRAIN = document.getElementById('train');
 const DOWNLOAD_MAP = document.getElementById('dlBoard');
 const AI_LOAD = document.getElementById('loadModel');
 const MAZE_LOAD = document.getElementById('maze-upload');
-let GATHER_DATA = document.getElementById('gather');
-let GENERATE_GRID = document.getElementById('generate');
-let START = document.getElementById('start');
-let AGENTS = document.getElementById('agentcount');
-let AGENTSUPDATE = document.getElementById('agents');
-let RANGE = document.getElementById('difficulty');
-let TEXTUPDATE = document.getElementById('updateDiff');
+const GATHER_DATA = document.getElementById('gather');
+const GENERATE_GRID = document.getElementById('generate');
+const START = document.getElementById('start');
+const AGENTS = document.getElementById('agentcount');
+const AGENTSUPDATE = document.getElementById('agents');
+const RANGE = document.getElementById('difficulty');
+const TEXTUPDATE = document.getElementById('updateDiff');
+const EPOCHS = document.getElementById('epochcount');
+const EPOCHSUPDATE = document.getElementById('epochsnum');
+EPOCHS.addEventListener('change', (e) => {
+    EPOCHSUPDATE.innerHTML = (e.target as any).value;
+})
+let fastMode = false
+
 let _results: any[] = [];
 let self;
 
 interface MainSceneType extends Phaser.Scene {
     grid: MainGrid;
+    intro?: Phaser.GameObjects.Text;
     agents: Agent[];
     agentIdCounter: number;
     numAgents: number;
@@ -59,9 +70,10 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
     agentSpeed: string = 'fast';
     gatherData: boolean = false;
     tilesLearned: number[] = [];
+    playingMusic: boolean = false;
 
     constructor() {
-        super('main');
+        super({ key: 'mainscene' });
         this.agents = [];
         this.trainingDataX = [];
         this.trainingDataY = [];
@@ -70,8 +82,28 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         self = this;
     }
 
+    preload() {
+        this.load.image('inside', 'insidemouse.jpeg');
+        this.load.audio('theme', 'PinkyAndTheBrain.mp3');
+        this.load.audio('pop', 'shortpop.wav');
+        this.load.audio('win', 'winner.wav');
+    }
     getAgentSpeed() {
         return this.agentSpeed === 'fast' ? 1000 : 50;
+    }
+    getDirectionArrow(direction: number){
+
+        switch(direction){
+            case 0:
+                return `<i style="font-size: 50px" class="bi bi-arrow-up-square-fill"></i>`;
+            case 1:
+                return `<i style="font-size: 50px" class="bi bi-arrow-down-square-fill"></i>`;
+            case 2:
+                return `<i style="font-size: 50px" class="bi bi-arrow-left-square-fill"></i>`;
+            case 3:
+                return `<i style="font-size: 50px" class="bi bi-arrow-right-square-fill"></i>`;
+        }
+
     }
     getPercentLearned() {
         return ((this.tilesLearned.length / this.grid.grid.filter(r=>r.status === 4).length) * 100).toFixed(2);
@@ -127,6 +159,17 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         return true
 
     }
+    async handleMusic(){
+        if(!this.playingMusic){
+            
+            this.sound.play('theme', { loop: true, volume: 0.25 });
+            this.playingMusic = true;
+        } else {
+            this.sound.stopAll();
+            this.playingMusic = false;
+        }
+        
+    }
     clearTrainingData() {
         localStorage.removeItem('trainingDataX');
         localStorage.removeItem('trainingDataY');
@@ -141,7 +184,6 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         }
 
     }
-    // function to get the training data
     getTrainingData() {
         let tdX = JSON.parse(localStorage.getItem('trainingDataX'));
         let tdY = JSON.parse(localStorage.getItem('trainingDataY'));
@@ -159,7 +201,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         }
         let tdX = JSON.parse(localStorage.getItem('trainingDataX'));
         let tdY = JSON.parse(localStorage.getItem('trainingDataY'));
-        await this.AI.trainModel(tdX, tdY, 100);
+        await this.AI.trainModel(tdX, tdY, (EPOCHS as any).value);
         let t = tdX[Math.floor(Math.random() * tdX.length)];
         self.aiLoaded = true;
         this.clearTrainingData();
@@ -178,7 +220,6 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         const y = document.getElementById('gatheringDataFlag');
         y.innerHTML = 'Model Training Complete';
     }
-    // function to save a text file as .json
     saveTextAsFile(textToWrite) {
         var textFileAsBlob = new Blob([textToWrite], { type: 'text/json' });
         var downloadLink = document.createElement("a");
@@ -193,8 +234,11 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
 
         downloadLink.click();
     }
-
     async handleGameOver(q, moves, id, win) {
+       
+        if(win){
+            document.getElementById(`winner`).innerHTML = `🕵🏻‍♀️ ${id} made it to the 🧀!`
+        }
         PERCENT_LEARNED.innerHTML = `Percent Visited: ${self.getPercentLearned()}%`;
         _results.push({ id: id, moves: moves + 1, q: q, state: win ? 1 : 0 });
         AGENTS_HEALTH.innerHTML = `Agents: ${self.agents.length - 1} / ${self.numAgents}`;
@@ -220,28 +264,24 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         }
         
         if (_results.length === self.numAgents) {
+            console.log('all agents done');
+            console.log(self.agents.length);
             let sortedArr = sortArray(_results, 'q');
             document.getElementById(`winner`).innerHTML = `W:${sortedArr[0].id} M:${sortedArr[0].moves} Q:${sortedArr[0].q}`;
             _results.slice(0,_results.length - 1);
-            self.agents.forEach(a => {
-                a.destroy();
-            });
+            
         }
     }
-
     createAgent() {
         self.agentIdCounter++;
         return new Agent(self, 20, 30, 0xffffff, self.handleGameOver, self.agentIdCounter);
     }
-
+    ///////////////////////
     // the main gent loop is in here
+    ////////////////////////////////////
     async startAgents() {
-        // console.log('start agents');
-        if (self.agents.length === 0) {
-            console.log('no agents');
-        }
+        // get the first agent in the array
         let agent = self.agents[0] as Agent
-        
         // set agent on a random open cell - status 4
         agent.setCurrentCell(self.grid.grid.filter(r => r.status === 4)[Math.floor(Math.random() * self.grid.grid.length)]);
         // draw the agent texture
@@ -258,6 +298,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                     this.startAgents();
                 } else {
                     console.log('no more agents');
+                    console.log(self.agents.length);
                     if (self.gatherData) {
                         console.log('no more agents');
                         self.trainModel();
@@ -283,20 +324,29 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                 let nextMove = await self.AI.predict([ea]); // returns a 1D array of the next move
                 // get the index of the highest value in the array
                 let hightest = self.getDirection(nextMove);
+                PREDICTION.innerHTML = self.getDirectionArrow(hightest);
                 // try to move to the nextMove which will add reward to the agent
                 if (agent.move(possNextMoves[hightest])) {
                     // pause for 1 second
-                    await timer(750);
+                    await timer(500);
                 }
 
             } else {
                 // we are gathering data or we have no trained model
+                
+                // set to cell [0] if the current cell did not get set - TODO - fix this
+                if(!agent.getCurrentCell()){
+                    agent.setCurrentCell(self.grid.grid[0]);
+                }
+
                 // define an array of possible next moves
-                let options = self.grid.getPossibleNextMoves(agent.getCurrentCell() || self.grid[0]).filter(r => typeof r !== 'number')
+                let options = self.grid.getPossibleNextMoves(agent.getCurrentCell()).filter(r => typeof r !== 'number')
                 // choose a random move from the array of possible next moves
                 nextMove = options[Math.floor(Math.random() * options.length)];
                 // if the next move is in the agents history then remove it from the array
+
                 // this reduces the chance of the agent getting stuck in a loop
+                // by removing the already visited cell from the array of possible next moves
                 if (agent.history.indexOf(nextMove.id) > -1) {
                     options = options.filter(r => r.id !== nextMove.id);
                     nextMove = options[Math.floor(Math.random() * options.length)];
@@ -304,6 +354,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
 
                 // try to move to the nextMove which will add reward to the agent
                 if (agent.move(nextMove)) {
+                    
                     if(self.tilesLearned.indexOf(nextMove.id) === -1){
                         self.tilesLearned.push(nextMove.id);
                         // console.log(self.tilesLearned.length);
@@ -337,17 +388,15 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                     // add the Q values for the current cell to the training data
                     self.trainingDataY.push(futureQSet);
                     // set the color to white to leave a trail of visited cells
-                    nextMove.setColor(0xffffff);
+                    nextMove.setColor(0x646464);
                     // pause for 50 ms if gathering data or 1 second if not
-                    await timer(self.gatherData ? 50 : 750);
+                    await timer(fastMode ? 100 : 700);
 
                 }
             }
 
         }
     }
-
-
     createGrid() {
         if (!self.grid) {
             self.grid = new MainGrid(this, 0, 0, 10, this.ranger);
@@ -360,8 +409,192 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         target[0] = 3;
         localStorage.setItem('currentGrid', JSON.stringify(target));
     }
+    createTextures(){
+        let bar = [
+            ".11.11..",
+            "1441441.",
+            "1411141.",
+            ".11111..",
+            ".10101..",
+            ".11211..",
+            "111111.4",
+            "11111144"
+        ]
+
+            self.textures.generate(`mouse_texture`, {
+                data : bar,
+                pixelWidth : 8
+            });
+
+
+        let frame_3 = [
+            ".11.11..",
+            "1441441.",
+            "1441441.",
+            ".11111..",
+            ".10101..",
+            ".11211..",
+            "111111.4",
+            "10111144"
+        ];
+        let frame_4 = [
+            ".11.11..",
+            "1441441.",
+            "1441441.",
+            ".11111..",
+            ".10101..",
+            ".11211..",
+            "111111.4",
+            "11110144"
+        ];
+
+        this.textures.generate(`walk_ani3`, {
+            data : frame_3,
+            pixelWidth : 8
+        });
+        this.textures.generate(`walk_ani4`, {
+            data : frame_4,
+            pixelWidth : 8
+        });
+        // create a phaser animation from the frames
+        this.anims.create({
+            key: `walk`,
+            frames: [
+                { key: `walk_ani3`, frame: `walk_ani03` },
+                { key: `walk_ani4`, frame: `walk_ani04` }
+            ],
+            frameRate: 2,
+            repeat: -1
+        });
+
+
+        let ran = Math.floor(Math.random() * 2000);
+        let ex = [
+            "........",
+            "........",
+            "........",
+            "....8...",
+            "...82...",
+            "........",
+            "........",
+            "........"
+        ]
+
+        let ex_1 = [
+            "........",
+            "........",
+            "........",
+            "....8...",
+            "...22...",
+            "....3...",
+            "........",
+            "........"
+        ];
+        let ex_2 = [
+            "........",
+            ".....8..",
+            "...888..",
+            "...22...",
+            "...33...",
+            "..8..8..",
+            ".8...8..",
+            "........"
+        ];
+        let ex_3 = [
+            "......3.",
+            ".3...83.",
+            "...888..",
+            ".333333.",
+            ".333333.",
+            "..2338..",
+            ".73..7..",
+            "7......."
+        ];
+        let ex_4 = [
+            "......2.",
+            ".2...23.",
+            ".2.333..",
+            "322..33.",
+            "322..33.",
+            "..2..83.",
+            ".2...73.",
+            "......3."
+        ];
+        let ex_5 = [
+            "......2.",
+            ".2...23.",
+            ".2.333..",
+            "322..33.",
+            "322..33.",
+            "..2..83.",
+            ".2...73.",
+            "......3."
+        ];
+        let ex_6 = [
+            ".......3",
+            ".....2..",
+            "........",
+            "3.......",
+            "........",
+            "........",
+            "....7...",
+            ".2......"
+        ];
+
+        this.textures.generate(`explode_ani1`, {
+            data : ex_1,
+            pixelWidth : 10
+        });
+        this.textures.generate(`explode_ani2`, {
+            data : ex_2,
+            pixelWidth : 10
+        });
+        this.textures.generate(`explode_ani3`, {
+            data : ex_3,
+            pixelWidth : 10
+        });
+        this.textures.generate(`explode_ani4`, {
+            data : ex_4,
+            pixelWidth : 10
+        });
+        this.textures.generate(`explode_ani5`, {
+            data : ex_5,
+            pixelWidth : 10
+        });
+        this.textures.generate(`explode_ani6`, {
+            data : ex_6,
+            pixelWidth : 10
+        });
+
+
+        // create a phaser animation from the frames
+        this.anims.create({
+            key: `explode`,
+            frames: [
+                { key: `explode_ani1`, frame: `${ran}_ani01` },
+                { key: `explode_ani2`, frame: `${ran}_ani02` },
+                { key: `explode_ani3`, frame: `${ran}_ani03` },
+                { key: `explode_ani4`, frame: `${ran}_ani04` },
+                { key: `explode_ani5`, frame: `${ran}_ani05` },
+                { key: `explode_ani6`, frame: `${ran}_ani06` }
+
+            ],
+            frameRate: 6,
+            repeat: 0
+        });
+
+        this.textures.generate(`explosion`, {
+            data : ex,
+            pixelWidth : 8
+        });
+
+    }
     create() {
 
+        this.createTextures();
+        document.getElementById('music').addEventListener('click', (e) => {
+            this.handleMusic()
+        })
         AI_LOAD.addEventListener('click', async (e) => {
             let msg = await self.loadModel();
             console.log(`result from loading model: ${msg}`);
@@ -380,6 +613,8 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
 
         GATHER_DATA.addEventListener('click', (e) => {
             self.gatherData = !self.gatherData
+            const header = document.getElementById('headerbar');
+            header.style.backgroundColor = self.gatherData ? '#f79e9e' : '#CEF4FC';
             const y = document.getElementById('gatheringDataFlag');
             if(self.gatherData){
                 y.classList.remove('bg-warning');
@@ -393,7 +628,9 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         });
 
         GENERATE_GRID.addEventListener('click', (e) => {
+            // document.getElementById('difficulty').style.display = 'none';
             this.createGrid();
+            GENERATE_GRID.attributes.setNamedItem(document.createAttribute('disabled'));
 
         
         let d2Check = GATHER_DATA.attributes.getNamedItem('disabled');
@@ -407,20 +644,30 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         }
         });
 
-        START.addEventListener('click', (e) => {
+        START.addEventListener('click', async (e) => {
+            if(!this.playingMusic){
+                this.sound.play('theme', { loop: true, volume: 0.25 });
+                this.playingMusic = true;
+            }
+            
             this.createAgents();
-            this.startAgents();
+            self.startAgents();
         });
 
         AGENTS.addEventListener('change', (e) => {
             this.numAgents = parseInt((<HTMLInputElement>e.target).value);
             AGENTSUPDATE.innerHTML = `${this.numAgents}`;
+            
         });
 
         RANGE.addEventListener('change', (e) => {
             this.ranger = parseInt((<HTMLInputElement>e.target).value);
             console.log(this.ranger);
             TEXTUPDATE.innerHTML = `${this.ranger}`;
+            let d2Check = GENERATE_GRID.attributes.getNamedItem('disabled');
+            if(d2Check){
+                GENERATE_GRID.attributes.removeNamedItem('disabled');
+            }
         });
 
         // this.input.keyboard.on('keydown', (pointer) => {
@@ -456,7 +703,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
     createAgents() {
         while (self.agents.length < self.numAgents) {
             let a = self.createAgent();
-            a.setCurrentCell(self.grid.grid[0]);
+            a.setCurrentCell(self.grid.grid.filter(r => r.status === 4)[Math.floor(Math.random() * self.grid.grid.length)]);
             self.agents.push(a);
         }
     }

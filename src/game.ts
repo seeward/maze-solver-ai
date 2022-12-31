@@ -1,12 +1,13 @@
 import 'phaser';
 import  MainScene from './scenes/mainScene';
+import IntroScene from './scenes/introScene';
 
 const config = {
     type: Phaser.AUTO,
     parent: 'game',
-    backgroundColor: '#ffffff',
-    width: 1100,
-    height: 1100,
+    backgroundColor: '#000000',
+    width: 1000,
+    height: 1000,
     scene: MainScene
 };
 

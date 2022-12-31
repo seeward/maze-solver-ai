@@ -27,7 +27,6 @@ export class GridCell extends Phaser.GameObjects.Rectangle {
         this.y = y;
         this.q = 0;
         this.status = status;  // 0 == wall, 4 === path, 2 === target
-        
         this.id = id;
         this.size = size;
         this.col = col;
@@ -44,6 +43,7 @@ export class GridCell extends Phaser.GameObjects.Rectangle {
         this.color = 0xffffff;
     }
     setTarget() {
+        console.log('set target');
         this.target = true;
         this.status = 2;
         let tar = new Target(this.scene, this.x, this.y, 0x00ff00);
@@ -55,12 +55,28 @@ export class GridCell extends Phaser.GameObjects.Rectangle {
         this.update()
         // console.log(this.color);
     }
-    updateStatus(status) {
+    drawFlower() {
+        let flowerPixels = [
+            "..2222..",
+            ".822228.",
+            "22222222",
+            "22288222",
+            "22288222",
+            "22222222",
+            ".822228.",
+            "..2222..",
+        ]
+        this.scene.textures.generate(`flower_${this.id}`, {
+            data: flowerPixels,
+            pixelWidth:4
+        });
 
+        let y = this.scene.add.sprite(this.x + 10, this.y + 10, `flower_${this.id}`).setOrigin(0).setDepth(20);
+    }
+    updateStatus(status) {
+        // console.log(status);
         this.status = status;
-        // console.log(`status: ${this.status}`);
-        
-        this.reward = this.status === 0 ?  -1 : 20 - this.q 
+        this.reward = this.status === 0 ? -1 : 20 - this.q
     }
     update() {
         this.cell.setFillStyle(this.color);
@@ -73,27 +89,19 @@ export class GridCell extends Phaser.GameObjects.Rectangle {
         this.calculateDistanceToTarget();
     }
     calculateDistanceToTarget() {
-
         let distanceH = this.targetCell.col - this.col;
         let distanceV = this.targetCell.row - this.row;
         this.q = distanceH + distanceV;
-
-        
-        // this.drawIndexes();
         return this.q;
     }
     drawIndexes() {
-
-        let ellipse = this.scene.add.ellipse(this.x + 10, this.y + 10, 20, 20, 0xffffff, 1);
-        let t = this.scene.add.text(this.x + 2, this.y + 5, this.id.toString(), { color: '#000000', fontSize: '12px' });
+        // let ellipse = this.scene.add.ellipse(this.x + 10, this.y + 10, 20, 20, 0xffffff, 1);
+        // let t = this.scene.add.text(this.x + 2, this.y + 5, this.id.toString(), { color: '#000000', fontSize: '12px' });
         let t2 = this.scene.add.text(this.x + 25, this.y + 10, this.getQ().toString(), { color: '#ffffff', fontSize: '20px' });
-        // let t3 = this.scene.add.text(this.x + 50, this.y + 10, this.status.toString(), { color: '#ffffff', fontSize: '30px' });
-
+        let t3 = this.scene.add.text(this.x + 50, this.y + 10, this.getReward().toString(), { color: '#ffffff', fontSize: '30px' });
     }
     getReward() {
-        return this.status === 0 ?  -1 : 20 - this.q;
-        
+        // this.status === 0 ? this.drawFlower() : this.drawIndexes();
+        return this.status === 0 ? -1 : 20 - this.q;
     }
-    
-
 }

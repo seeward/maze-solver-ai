@@ -61,11 +61,13 @@ export class MazeSolver {
       validationSplit: 0.2,
       callbacks: {
         onEpochEnd: (epoch, logs) => {
-          console.log(`Epoch ${epoch + 1} / 100: loss = ${logs.loss}`);
-          d.innerHTML = `Epoch ${epoch + 1} / 100: loss = ${logs.loss.toFixed(4)}`;
+          console.log(`Epoch ${epoch + 1}/${epochs} : loss = ${logs.loss}`);
+          d.innerHTML = `Epoch ${epoch + 1}/${epochs} : loss = ${logs.loss.toFixed(4)}`;
         }
       }
     });
+    xs.dispose();
+    ys.dispose();
   }
   predict(X: number[][]) {
     const xs = tf.tensor2d(X);
@@ -120,7 +122,7 @@ export class MazeSolver {
     });
     this.active = true;
   }
-
+  
 
 }
 

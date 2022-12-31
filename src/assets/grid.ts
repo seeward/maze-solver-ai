@@ -2,7 +2,7 @@ import 'phaser';
 import { GridCell } from './gridCell';
 
 let bg = "ffffff"
-let wall = getRandomColor('dark')
+let wall = "BCDEE6"
 
 export interface BorderObject {
     top: GridCell[];
