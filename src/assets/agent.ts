@@ -141,21 +141,16 @@ export class Agent extends Phaser.GameObjects.Sprite {
             // localStorage.setItem(`agent_${this.id}`, JSON.stringify(this.history));
         }
 
-        
-        
         if(cell.id === 99){
             // winner
             this.scene.sound.play('win', { volume: 0.15 });
             this.alive = false;
-            console.log(`🕵🏻‍♀️ ${this.id} made it to the 🧀!`);
-            
-            // document.getElementById(`stats`).innerHTML = `Agent ${this.id} is the Winner!`;
-            // localStorage.setItem(`agent_${this.id}`, JSON.stringify(this.history));
             this.currentCell = cell;
+            console.log(`🕵🏻‍♀️ ${this.id} made it to the 🧀!`);
             this.endingQ = cell.getQ();
-            this.cb(cell.getQ(), this.moves, this.id, true)
-        }
-        if(cell.status !== 0){
+            this.cb(cell.getQ(), this.moves, this.id, true); 
+            
+        } else if(cell.status !== 0){
             // console.log(`Agent ${this.id} moved to Cell: ${cell}`);
             // cell.updateStatus(3);
             this.currentCell = cell;
@@ -164,16 +159,17 @@ export class Agent extends Phaser.GameObjects.Sprite {
             // this.history[this.history.length - 1].cell.updateStatus(4);
         } else {
             this.scene.sound.play('pop', { volume: 0.15 });
+
             cell.setColor(0xff0000);
             setTimeout(() => {
                 cell.setColor(0xBCDEE6);
-            },100);
+            },250);
             this.alive = false;
             this.endingQ = cell.getQ();
-            // console.log(`Agent ${this.id} died at Cell: ${cell.id}`);
             this.cb(cell.getQ(), this.moves, this.id, false)
             this.makeExplosion();
             console.log(`Agent ${this.id} died at cell: ${cell.id}`);
+            this.agent.destroy();
             // document.getElementById(`stats`).innerHTML = `Agent ${this.id} Score: ${this.score}`;
             // document.getElementById(`historystats`).innerHTML += `<li>Agent ${this.id} Q:${this.endingQ} M:${this.moves}</li>`;
             // localStorage.setItem(`agent_${this.id}`, JSON.stringify(this.history));
@@ -189,6 +185,7 @@ export class Agent extends Phaser.GameObjects.Sprite {
             this.update();
             return true
         } else {
+            console.log(`Agent ${this.id} is dead.`);
             this.agent.destroy();
             
             return false

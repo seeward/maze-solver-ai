@@ -71,6 +71,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
     gatherData: boolean = false;
     tilesLearned: number[] = [];
     playingMusic: boolean = false;
+    introElements: any[] = [];
 
     constructor() {
         super({ key: 'mainscene' });
@@ -81,7 +82,22 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         this.clearTrainingData();
         self = this;
     }
-
+    createIntro() {
+        let flipper = false
+        this.introElements.push(this.add.text(25, 25, '🤖', { fontSize: '100px', color: '#ffffff' }));
+        this.introElements.push(this.add.text(25, 150, 'Welcome to Maze Solver AI', { fontSize: '32px', color: '#ffffff' }));
+        // for(let i = 0; i < 10; i++){
+        //     let ySpace = 50;
+        //     for(let j = 0; j < 10; j++){
+        //         let xSpace = 50;
+        //         this.introElements.push(this.add.rectangle(j * ySpace, i * xSpace, 50, 50, flipper ? 0xBCDEE6 : 0x000000))
+        //     }
+        //     flipper = !flipper;
+        // }
+    }
+    deleteIntro() {
+        this.introElements.forEach(e => e.destroy());
+    }
     preload() {
         this.load.image('inside', 'insidemouse.jpeg');
         this.load.audio('theme', 'PinkyAndTheBrain.mp3');
@@ -193,6 +209,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         this.AI.saveModel();
     }
     async trainModel() {
+        this.agents.forEach(a => a.destroy());
         if (!this.AI.active) {
             await this.AI.createModel()
         }
@@ -239,8 +256,16 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         if(win){
             document.getElementById(`winner`).innerHTML = `🕵🏻‍♀️ ${id} made it to the 🧀!`
         }
+        if (_results.length === self.numAgents) {
+            console.log('all agents done');
+            console.log(self.agents.length);
+            let sortedArr = sortArray(_results, 'q');
+            document.getElementById(`winner`).innerHTML = `W:${sortedArr[0].id} M:${sortedArr[0].moves} Q:${sortedArr[0].q}`;
+            _results.slice(0,_results.length - 1);
+        }
         PERCENT_LEARNED.innerHTML = `Percent Visited: ${self.getPercentLearned()}%`;
         _results.push({ id: id, moves: moves + 1, q: q, state: win ? 1 : 0 });
+
         AGENTS_HEALTH.innerHTML = `Agents: ${self.agents.length - 1} / ${self.numAgents}`;
         if (self.gatherData) {
             DATA_COUNT.innerHTML = `Data Length: ${self.getTrainingDataLength()}`;
@@ -263,14 +288,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
             }
         }
         
-        if (_results.length === self.numAgents) {
-            console.log('all agents done');
-            console.log(self.agents.length);
-            let sortedArr = sortArray(_results, 'q');
-            document.getElementById(`winner`).innerHTML = `W:${sortedArr[0].id} M:${sortedArr[0].moves} Q:${sortedArr[0].q}`;
-            _results.slice(0,_results.length - 1);
-            
-        }
+       
     }
     createAgent() {
         self.agentIdCounter++;
@@ -286,21 +304,23 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         agent.setCurrentCell(self.grid.grid.filter(r => r.status === 4)[Math.floor(Math.random() * self.grid.grid.length)]);
         // draw the agent texture
         agent.draw();
+
         let nextMoves: GridCell[] = []; // for the next possible moves
         let nextMove: GridCell = undefined; // for the actual next move
 
         while (self.agents.length > 0) {
             // handle agent death
             if (!agent.alive) {
+                console.log(`Agent ${agent.id} is dead in the while() loop.`);
                 this.grid.resetPath();
                 this.agents.shift(); // remove the agent from the array
                 if (this.agents.length !== 0) {
                     this.startAgents();
                 } else {
-                    console.log('no more agents');
-                    console.log(self.agents.length);
+                    // console.log('no more agents');
+                    // console.log(self.agents.length);
                     if (self.gatherData) {
-                        console.log('no more agents');
+                        // console.log('no more agents');
                         self.trainModel();
                         const y = document.getElementById('gatheringDataFlag');
                         y.innerHTML = 'Training AI model...';
@@ -392,6 +412,8 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                     // pause for 50 ms if gathering data or 1 second if not
                     await timer(fastMode ? 100 : 700);
 
+                } else {
+                    console.log(`agent died: ${self.agents.length}`);
                 }
             }
 
@@ -591,9 +613,10 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
     }
     create() {
 
+        this.createIntro();
         this.createTextures();
         document.getElementById('music').addEventListener('click', (e) => {
-            this.handleMusic()
+            this.handleMusic();
         })
         AI_LOAD.addEventListener('click', async (e) => {
             let msg = await self.loadModel();
@@ -628,6 +651,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         });
 
         GENERATE_GRID.addEventListener('click', (e) => {
+            this.deleteIntro();
             // document.getElementById('difficulty').style.display = 'none';
             this.createGrid();
             GENERATE_GRID.attributes.setNamedItem(document.createAttribute('disabled'));
