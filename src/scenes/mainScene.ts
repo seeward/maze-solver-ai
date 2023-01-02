@@ -31,7 +31,7 @@ EPOCHS.addEventListener('change', (e) => {
     EPOCHSUPDATE.innerHTML = (e.target as any).value;
 })
 let fastMode = false
-
+let mousey;
 let _results: any[] = [];
 let self;
 
@@ -84,17 +84,27 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
     }
     createIntro() {
         let flipper = false
-        this.introElements.push(this.add.text(25, 25, '🤖', { fontSize: '100px', color: '#ffffff' }));
-        this.introElements.push(this.add.text(25, 150, 'Welcome to Maze Solver AI', { fontSize: '32px', color: '#ffffff' }));
-        // for(let i = 0; i < 10; i++){
-        //     let ySpace = 50;
-        //     for(let j = 0; j < 10; j++){
-        //         let xSpace = 50;
-        //         this.introElements.push(this.add.rectangle(j * ySpace, i * xSpace, 50, 50, flipper ? 0xBCDEE6 : 0x000000))
-        //     }
-        //     flipper = !flipper;
-        // }
-    }
+        this.introElements.push(new MainGrid(this,200,200,10, 4))
+        this.introElements.push(this.add.rectangle(75, 75, 850, 600, 0xffffff).setDepth(99).setOrigin(0, 0).setAlpha(0.95));
+        this.introElements.push(this.add.text(125, 125, '🤖', { fontSize: '100px', color: '#000000' }).setDepth(100));
+        this.introElements.push(this.add.text(275,  125, 'Welcome to Maze Solver AI', { fontSize: '32px', color: '#000000' }).setDepth(100));
+        this.introElements.push(this.add.text(275,  175, 'This is a simple maze solving AI that uses a neural \nnetwork to learn how to solve a maze.', { fontSize: '16px', color: '#000000' }).setDepth(100));
+        this.introElements.push(this.add.text(275,  225, 'The AI is trained using a genetic algorithm that \nuses a population of agents to learn how to solve \nthe maze.', { fontSize: '16px', color: '#000000' }).setDepth(100));
+        this.introElements.push(this.add.text(125,  325, 'Step 1: Generate a Maze of a chosen difficulty.', { fontSize: '18px', color: '#000000' }).setDepth(100));
+        this.introElements.push(this.add.text(125,  375, 'Step 2: Create some AI agents to learn the maze by gathering data.', { fontSize: '18px', color: '#000000' }).setDepth(100));
+        this.introElements.push(this.add.text(125,  425, 'Step 3: Train the AI using the gathered data for a number of Epochs.', { fontSize: '18px', color: '#000000' }).setDepth(100));
+        this.introElements.push(this.add.text(125,  475, 'Step 4: Watch the AI solve the maze on its own.', { fontSize: '18px', color: '#000000' }).setDepth(100));
+        this.introElements.push(this.add.text(125,  575, 'Pro Tip!', { fontSize: '22px', color: '#FF0000' }).setDepth(100));
+        this.introElements.push(this.add.text(110,  610, 'Keep training the AI until the loss is close to 0.', { fontSize: '26px', color: '#000000' }).setDepth(100));
+        self.createTextures();
+        let spaceX = 120;
+        for(let i = 0;i < 10;i++){
+
+            this.introElements.push(this.add.sprite(spaceX, 540, 'mouse_texture').setDepth(100).setScale(0.5));
+            spaceX += 85
+        }
+        
+    }   
     deleteIntro() {
         this.introElements.forEach(e => e.destroy());
     }
@@ -259,6 +269,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         if (_results.length === self.numAgents) {
             console.log('all agents done');
             console.log(self.agents.length);
+            self.agents.forEach(a => a.destroy());
             let sortedArr = sortArray(_results, 'q');
             document.getElementById(`winner`).innerHTML = `W:${sortedArr[0].id} M:${sortedArr[0].moves} Q:${sortedArr[0].q}`;
             _results.slice(0,_results.length - 1);
@@ -614,7 +625,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
     create() {
 
         this.createIntro();
-        this.createTextures();
+        // this.createTextures();
         document.getElementById('music').addEventListener('click', (e) => {
             this.handleMusic();
         })
@@ -736,7 +747,6 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         if (this.grid) {
             this.grid.update();
         }
-
-
+    
     }
 }

@@ -146,9 +146,8 @@ export class Agent extends Phaser.GameObjects.Sprite {
             this.scene.sound.play('win', { volume: 0.15 });
             this.alive = false;
             this.currentCell = cell;
-            console.log(`🕵🏻‍♀️ ${this.id} made it to the 🧀!`);
             this.endingQ = cell.getQ();
-            this.cb(cell.getQ(), this.moves, this.id, true); 
+            this.cb(cell.getQ(), this.moves, this.id, false); 
             
         } else if(cell.status !== 0){
             // console.log(`Agent ${this.id} moved to Cell: ${cell}`);
@@ -170,9 +169,7 @@ export class Agent extends Phaser.GameObjects.Sprite {
             this.makeExplosion();
             console.log(`Agent ${this.id} died at cell: ${cell.id}`);
             this.agent.destroy();
-            // document.getElementById(`stats`).innerHTML = `Agent ${this.id} Score: ${this.score}`;
-            // document.getElementById(`historystats`).innerHTML += `<li>Agent ${this.id} Q:${this.endingQ} M:${this.moves}</li>`;
-            // localStorage.setItem(`agent_${this.id}`, JSON.stringify(this.history));
+
         }
     }
     move(cell) {
