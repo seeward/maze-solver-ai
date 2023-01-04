@@ -97,9 +97,8 @@ export class MainGrid extends Phaser.GameObjects.Rectangle {
             for (let j = 0; j < this.gridSize; j++) {
                 let multiY = j * 100
                 // console.log(statuses[i]);
-                grid.push(new GridCell(this.scene, multiY, multiX, idCounter, 100, statuses[idCounter], statuses[idCounter] === 0 ? 0xffffff : 0x000000, j + 1, i + 1))
+                grid.push(new GridCell(this.scene, multiY, multiX, idCounter, 100, statuses[idCounter], statuses[idCounter] === 0 ? 0xBCDEE6 : 0x000000, j + 1, i + 1))
                 idCounter++;
-                
             }
         }
 

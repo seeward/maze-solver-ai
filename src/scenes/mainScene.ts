@@ -335,7 +335,11 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         }
         // get the first agent in the array
         this.currentAgent = self.agents[0] as Agent;
-        this.currentAgent.setCurrentCell(self.grid.grid.filter(r => r.status === 4)[Math.floor(Math.random() * self.grid.grid.length)]);
+        if(this.currentAgent){
+            this.currentAgent.setCurrentCell(self.grid.grid.filter(r => r.status === 4)[Math.floor(Math.random() * self.grid.grid.length)]);
+        } else {
+            return;
+        }
 
         // set agent on a random open cell - status 4
         // draw the agent texture
@@ -359,9 +363,15 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                     }
                     break;
                 } else {
+                    
                     this.currentAgent = self.agents[0] as Agent;
-                    this.currentAgent.setCurrentCell(self.grid.grid.filter(r => r.status === 4)[Math.floor(Math.random() * self.grid.grid.length)]);
-                    this.currentAgent.draw();
+                    if(this.currentAgent){
+                        this.currentAgent.setCurrentCell(self.grid.grid.filter(r => r.status === 4)[Math.floor(Math.random() * self.grid.grid.length)]);
+                        this.currentAgent.draw();
+                    } else {
+                        break;
+                    }
+                    
                 }
 
             }
