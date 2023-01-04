@@ -18,6 +18,7 @@ export class GridCell extends Phaser.GameObjects.Rectangle {
     col: number;
     row: number;
     reward: number = 0;
+    targetCheese: Target;
 
 
     constructor(scene: Phaser.Scene, x: number = 0, y: number = 0, id: number = 0, size: number = 10, status: number = 0, color: number, col?: number, row?: number) {
@@ -27,6 +28,7 @@ export class GridCell extends Phaser.GameObjects.Rectangle {
         this.y = y;
         this.q = 0;
         this.status = status;  // 0 == wall, 4 === path, 2 === target
+        
         this.id = id;
         this.size = size;
         this.col = col;
@@ -37,17 +39,17 @@ export class GridCell extends Phaser.GameObjects.Rectangle {
     }
     draw() {
         this.cell = this.scene.add.rectangle(this.x, this.y, this.size, this.size, this.color).setOrigin(0);
+        
     }
     setStartCell() {
         this.startCell = true;
         this.color = 0xffffff;
     }
     setTarget() {
-        console.log('set target');
         this.target = true;
         this.status = 2;
-        let tar = new Target(this.scene, this.x, this.y, 0x00ff00);
-        tar.draw();
+        this.targetCheese = new Target(this.scene, this.x, this.y, 0x00ff00);
+        this.targetCheese.draw();
     }
     setColor(color) {
         this.color = color;
@@ -55,23 +57,16 @@ export class GridCell extends Phaser.GameObjects.Rectangle {
         this.update()
         // console.log(this.color);
     }
-    drawFlower() {
-        let flowerPixels = [
-            "..2222..",
-            ".822228.",
-            "22222222",
-            "22288222",
-            "22288222",
-            "22222222",
-            ".822228.",
-            "..2222..",
-        ]
-        this.scene.textures.generate(`flower_${this.id}`, {
-            data: flowerPixels,
-            pixelWidth:4
-        });
-
-        let y = this.scene.add.sprite(this.x + 10, this.y + 10, `flower_${this.id}`).setOrigin(0).setDepth(20);
+    eatCheese() {
+        console.log(`Eating cheese`);
+        if(this.target){
+            this.targetCheese.destroy();
+        }
+    }
+    restoreCheese() {
+        if(this.target){
+            this.setTarget();
+        }
     }
     updateStatus(status) {
         // console.log(status);

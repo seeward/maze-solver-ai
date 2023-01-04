@@ -8,7 +8,7 @@ const timer = ms => new Promise(res => setTimeout(res, ms))
 const PERCENT_LEARNED = document.getElementById('boardPercentLearned');
 const AGENTS_HEALTH = document.getElementById('agentsHealth');
 const FAST_MODE = document.getElementById('fastmode');
-console.log((FAST_MODE as any).value);
+// console.log((FAST_MODE as any).value);
 FAST_MODE.addEventListener('change', (e) => {
     fastMode = (e.target as any).checked;
 })
@@ -36,6 +36,7 @@ let _results: any[] = [];
 let self;
 let agentsDead = 0;
 
+
 interface MainSceneType extends Phaser.Scene {
     grid: MainGrid;
     intro?: Phaser.GameObjects.Text;
@@ -48,6 +49,8 @@ interface MainSceneType extends Phaser.Scene {
     trainingDataX: any[];
     trainingDataY: any[];
     currentAgent: Agent;
+    userAgent: Phaser.GameObjects.Sprite;
+    currentColor?: number | undefined; // selected to draw
 }
 
 // function to sort a given array of js objects A from lowest to highest index based on a given key 
@@ -75,6 +78,11 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
     playingMusic: boolean = false;
     introElements: any[] = [];
     currentAgent: Agent;
+    userAgent: Agent;
+    currentColor: number | undefined; // selected to draw
+    traps: Phaser.GameObjects.Sprite[] = [];
+    trail: any[] = [];
+    prevCell: GridCell;
 
     constructor() {
         super({ key: 'mainscene' });
@@ -99,7 +107,6 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         this.introElements.push(this.add.text(125, 475, 'Step 4: Watch the AI solve the maze on its own.', { fontSize: '18px', color: '#000000' }).setDepth(100));
         this.introElements.push(this.add.text(125, 575, 'Pro Tip!', { fontSize: '22px', color: '#FF0000' }).setDepth(100));
         this.introElements.push(this.add.text(110, 610, 'Keep training the AI until the loss is close to 0.', { fontSize: '26px', color: '#000000' }).setDepth(100));
-        self.createTextures();
         let spaceX = 120;
         for (let i = 0; i < 10; i++) {
 
@@ -119,6 +126,10 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
     }
     getAgentSpeed() {
         return this.agentSpeed === 'fast' ? 1000 : 50;
+    }
+    drawTrail(){
+        // this.trail.push(this.scene.add.line(this.agent.x, this.agent.y,this.prevCell.x + 50, this.prevCell.y + 50, this.agent.x, this.agent.y, 0xffffff, 0.5).setDepth(10));
+
     }
     getDirectionArrow(direction: number) {
 
@@ -201,11 +212,11 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
     async handleMusic() {
         if (!this.playingMusic) {
 
-            this.sound.play('theme', { loop: true, volume: 0.25 });
-            this.playingMusic = true;
+            // this.sound.play('theme', { loop: true, volume: 0.25 });
+            // this.playingMusic = true;
         } else {
-            this.sound.stopAll();
-            this.playingMusic = false;
+            // this.sound.stopAll();
+            // this.playingMusic = false;
         }
 
     }
@@ -281,8 +292,8 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         PERCENT_LEARNED.innerHTML = `Percent Visited: ${self.getPercentLearned()}%`;
         _results.push({ id: id, moves: moves + 1, q: q, state: win ? 1 : 0 });
         AGENTS_HEALTH.innerHTML = `Agents: ${self.numAgents - agentsDead} / ${self.numAgents}`;
-        console.log(`alive agents: ${self.agents.length}`)
-        console.log(`agents dead: ${agentsDead}`)
+        // console.log(`alive agents: ${self.agents.length}`)
+        // console.log(`agents dead: ${agentsDead}`)
         // console.log(`agents: ${self.agents}`)
         if (self.gatherData) {
             DATA_COUNT.innerHTML = `Data Length: ${self.getTrainingDataLength()}`;
@@ -326,17 +337,18 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         return new Agent(self, 20, 30, 0xffffff, self.handleGameOver, self.agentIdCounter);
     }
     ///////////////////////
-    // the main gent loop is in here
+    // the main Agent loop is in here
     ////////////////////////////////////
     async startAgents() {
-
+        agentsDead = 0;
+        await timer(2000);
         if (self.agents.length === 0) {
             return;
         }
         // get the first agent in the array
         this.currentAgent = self.agents[0] as Agent;
         if(this.currentAgent){
-            this.currentAgent.setCurrentCell(self.grid.grid.filter(r => r.status === 4)[Math.floor(Math.random() * self.grid.grid.length)]);
+            this.currentAgent.setCurrentCell(self.grid.grid.filter(r => r.status === 4 && r.id !== 99)[Math.floor(Math.random() * self.grid.grid.length)]);
         } else {
             return;
         }
@@ -366,7 +378,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                     
                     this.currentAgent = self.agents[0] as Agent;
                     if(this.currentAgent){
-                        this.currentAgent.setCurrentCell(self.grid.grid.filter(r => r.status === 4)[Math.floor(Math.random() * self.grid.grid.length)]);
+                        this.currentAgent.setCurrentCell(self.grid.grid.filter(r => r.status === 4 && r.id !== 99)[Math.floor(Math.random() * self.grid.grid.length)]);
                         this.currentAgent.draw();
                     } else {
                         break;
@@ -471,6 +483,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         if (!self.grid) {
             self.grid = new MainGrid(this, 0, 0, 10, this.ranger);
         } else {
+            self.traps.forEach(r=>r.destroy());
             self.grid.destroy();
             self.grid = new MainGrid(this, 0, 0, 10, this.ranger);
         }
@@ -478,8 +491,90 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         target[99] = 99;
         target[0] = 3;
         localStorage.setItem('currentGrid', JSON.stringify(target));
+
+        self.grid.grid.forEach((eachOne)=>{
+            if(eachOne.status === 0){
+                this.traps.push(this.add.sprite(eachOne.x, eachOne.y, `trap`).setOrigin(0).setDepth(120).setScale(1.04).play('pulse'))
+            }
+        })
+            
     }
     createTextures() {
+
+        let tap = ".............33333..............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,.............80008..............,3...........8880888............3,30000000000008000800000000000003,33030303030300080000303030303033,30000000000008000800000000000003,3...........8880888............3,.............80008..............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,.............33333..............";
+        let tap2 = tap.split(",")
+        this.textures.generate(`trap`, {
+            data: tap2,
+            pixelWidth: 3
+        });
+
+        let tap_1 = ".............33333..............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............080...............,.............80008..............,3...........8880888............3,30000000000008000800000000000003,33030303030800030000803030303033,30000000000008000800000000000003,3...........8880888............3,.............80008..............,..............000...............,..............080...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,.............33333..............";
+        let tap_2 = ".............33333..............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............080...............,..............000...............,..............030...............,.............80008..............,3...........8880888............3,30000000000008000800000000000003,33030303080300080000308030303033,30000000000008000800000000000003,3...........8880888............3,.............80008..............,..............000...............,..............030...............,..............000...............,..............080...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,.............33333..............";
+        let tap_3 = ".............33333..............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............080...............,..............000...............,..............030...............,..............000...............,..............030...............,.............80008..............,3...........8880888............3,30000000000008000800000000000003,33030308030300030000303080303033,30000000000008000800000000000003,3...........8880888............3,.............80008..............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............080...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,.............33333..............";
+        let tap_4 = ".............33333..............,..............030...............,..............000...............,..............030...............,..............000...............,..............080...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,.............80008..............,3...........8880888............3,30000000000008000800000000000003,33030803030300080000303030803033,30000000000008000800000000000003,3...........8880888............3,.............80008..............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............080...............,..............000...............,..............030...............,..............000...............,..............030...............,.............33333..............";
+        let tap_5 = ".............33333..............,..............030...............,..............000...............,..............080...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,.............80008..............,3...........8880888............3,30000000000008000800000000000003,33080303030300030000303030308033,30000000000008000800000000000003,3...........8880888............3,.............80008..............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............080...............,..............000...............,..............030...............,.............33333..............";
+        let tap_6 = ".............33833..............,..............080...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,.............80008..............,3...........8880888............3,30000000000008000800000000000003,88030303030300080000303030303088,30000000000008000800000000000003,3...........8880888............3,.............80008..............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............080...............,.............33833..............";
+        let tap_7 = ".............88888..............,..............080...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,.............80008..............,8...........8380838............8,80000000000008000800000000000008,88030303030300030000303030303088,80000000000008000800000000000008,8...........8380838............8,.............80008..............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............080...............,.............88888..............";
+        let tap_8 = ".............33333..............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,.............80008..............,3...........8880888............3,30000000000008000800000000000003,33030303030300080000303030303033,30000000000008000800000000000003,3...........8880888............3,.............80008..............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,..............000...............,..............030...............,.............33333..............";
+
+        let tap_1_1 = tap_1.split(",")
+        this.textures.generate(`trap_01`, {
+            data: tap_1_1,
+            pixelWidth: 3
+        });
+        let tap_1_2 = tap_2.split(",")
+        this.textures.generate(`trap_02`, {
+            data: tap_1_2,
+            pixelWidth: 3
+        });
+        let tap_1_3 = tap_3.split(",")
+        this.textures.generate(`trap_03`, {
+            data: tap_1_3,
+            pixelWidth: 3
+        });
+        let tap_1_4 = tap_4.split(",")
+        this.textures.generate(`trap_04`, {
+            data: tap_1_4,
+            pixelWidth: 3
+        });
+        let tap_1_5 = tap_5.split(",")
+        this.textures.generate(`trap_05`, {
+            data: tap_1_5,
+            pixelWidth: 3
+        });
+        let tap_1_6 = tap_6.split(",")
+        this.textures.generate(`trap_06`, {
+            data: tap_1_6,
+            pixelWidth: 3
+        });
+        let tap_1_7 = tap_7.split(",")
+        this.textures.generate(`trap_07`, {
+            data: tap_1_7,
+            pixelWidth: 3
+        });
+        let tap_1_8 = tap_8.split(",")
+        this.textures.generate(`trap_08`, {
+            data: tap_1_8,
+            pixelWidth: 3
+        });
+        this.anims.create({
+            key: `pulse`,
+            frames: [
+                { key: `trap_01`, frame: `trap_01` },
+                { key: `trap_02`, frame: `trap_02` },
+                { key: `trap_03`, frame: `trap_03` },
+                { key: `trap_04`, frame: `trap_04` },
+                { key: `trap_05`, frame: `trap_05` },
+                { key: `trap_06`, frame: `trap_06` },
+                { key: `trap_07`, frame: `trap_07` },
+                { key: `trap_08`, frame: `trap_08` }
+            ],
+            frameRate: 16,
+            repeat: -1
+        });
+
+
+
         let bar = [
             ".11.11..",
             "1441441.",
@@ -536,6 +631,78 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
             frameRate: 2,
             repeat: -1
         });
+
+
+        // mouse eating the cheese
+
+        let open_0 = [
+            ".11.11..",
+            "1441441.",
+            "1441441.",
+            ".11111..",
+            ".10101..",
+            ".11211..",
+            "111111.4",
+            "11111144"
+        ]
+
+
+ 
+        let open_3  = [
+            ".11.11..",
+            "1122111.",
+            "100001..",
+            "100001..",
+            "100001..",
+            "100001..",
+            "102201.4",
+            "11111144"
+        ];
+
+       
+
+        let open_4 = [
+            ".11.11..",
+            "1441441.",
+            "1441441.",
+            ".11111..",
+            ".10101..",
+            ".11211..",
+            "111111.4",
+            "11111144"
+        ];
+
+        this.textures.generate(`eat_ani0`, {
+            data: open_0,
+            pixelWidth: 8
+        });
+
+        
+        this.textures.generate(`eat_ani3`, {
+            data: open_3,
+            pixelWidth: 8
+        });
+
+        this.textures.generate(`eat_ani4`, {
+            data: open_4,
+            pixelWidth: 8
+        });
+
+
+        // create a phaser animation from the frames
+        this.anims.create({
+            key: `eat`,
+            frames: [
+                { key: `eat_ani0`, frame: `eat_ani00` },
+                { key: `eat_ani3`, frame: `eat_ani03` },
+                { key: `eat_ani4`, frame: `eat_ani04` }
+                
+            ],
+            frameRate: 3,
+            repeat: 1
+        });
+
+
 
 
         let ran = Math.floor(Math.random() * 2000);
@@ -649,7 +816,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                 { key: `explode_ani6`, frame: `${ran}_ani06` }
 
             ],
-            frameRate: 6,
+            frameRate: 8,
             repeat: 0
         });
 
@@ -660,15 +827,16 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
 
     }
     create() {
-
+        self.createTextures();
         this.createIntro();
-        // this.createTextures();
+        // self.userAgent = this.add.sprite(50, 50, 'mouse_texture').setDepth(150).play('eat')
+
         document.getElementById('music').addEventListener('click', (e) => {
             this.handleMusic();
         })
         AI_LOAD.addEventListener('click', async (e) => {
             let msg = await self.loadModel();
-            console.log(`result from loading model: ${msg}`);
+            // console.log(`result from loading model: ${msg}`);
             if (!msg) {
                 const y = document.getElementById('gatheringDataFlag');
                 y.classList.remove('bg-warning');
@@ -718,8 +886,8 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
 
         START.addEventListener('click', async (e) => {
             if (!this.playingMusic) {
-                this.sound.play('theme', { loop: true, volume: 0.25 });
-                this.playingMusic = true;
+                // this.sound.play('theme', { loop: true, volume: 0.25 });
+                // this.playingMusic = true;
             }
 
             this.createAgents();
@@ -734,7 +902,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
 
         RANGE.addEventListener('change', (e) => {
             this.ranger = parseInt((<HTMLInputElement>e.target).value);
-            console.log(this.ranger);
+            // console.log(this.ranger);
             TEXTUPDATE.innerHTML = `${this.ranger}`;
             let d2Check = GENERATE_GRID.attributes.getNamedItem('disabled');
             if (d2Check) {
@@ -742,26 +910,29 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
             }
         });
 
-        // this.input.keyboard.on('keydown', (pointer) => {
-
-
-        //     switch (pointer.key) {
-        //         case 'ArrowRight':
-        //             // this.agents[0].move(this.grid.getCellById(this.agents[0].getCurrentCell().id + 1));
-        //             break;
-        //         case 'ArrowLeft':
-        //             // this.createGrid();
-        //             break;
-        //         case 'ArrowUp':
-        //             // this.startAgents();
-        //             // this.agents[0].move(this.grid.getCellById(this.agents[0].getCurrentCell().id - 10));
-        //             break;
-        //         case 'ArrowDown':
-        //             // this.startAgents();
-        //             // this.agents[0].move(this.grid.getCellById(this.agents[0].getCurrentCell().id + 10));
-        //             break;
-        //     }
-        // })
+        this.input.keyboard.on('keydown', (pointer) => {
+            if(pointer.preventDefault){
+                pointer.preventDefault()
+            }
+            if(self.userAgent){
+                switch (pointer.key) {
+                    case 'ArrowRight':
+                        this.userAgent.x += 50
+                        break;
+                    
+                    case 'ArrowLeft':
+                        this.userAgent.x -= 50
+                        break;
+                    case 'ArrowUp':
+                        this.userAgent.y -= 50
+                        break;
+                    case 'ArrowDown':
+                        this.userAgent.y += 50
+                        break;
+                }
+            }
+            
+        })
     }
     // function to return the hightest value in an array
     getMaxOfArray(numArray) {
@@ -773,6 +944,9 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         return numArray.indexOf(max);
     }
     createAgents() {
+        if(self.agents.length > 0){
+            self.agents.forEach(a=>a.destroy());
+        }
         while (self.agents.length < self.numAgents) {
             let a = self.createAgent();
             a.setCurrentCell(self.grid.grid.filter(r => r.status === 4)[Math.floor(Math.random() * self.grid.grid.length)]);

@@ -59,15 +59,15 @@ export default {
 
           
         //  See https://www.npmjs.com/package/rollup-plugin-serve for config options
-        // serve({
-        //     open: true,
-        //     contentBase: 'dist',
-        //     host: 'localhost',
-        //     port: 10001,
-        //     headers: {
-        //         'Access-Control-Allow-Origin': '*'
-        //     }
-        // })
+        serve({
+            open: true,
+            contentBase: 'dist',
+            host: 'localhost',
+            port: 10001,
+            headers: {
+                'Access-Control-Allow-Origin': '*'
+            }
+        })
 
     ]
 };

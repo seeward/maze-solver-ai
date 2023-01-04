@@ -1,4 +1,5 @@
 import { GridCell } from "./gridCell";
+const timer = ms => new Promise(res => setTimeout(res, ms))
 
 
 export interface AgentHistory {
@@ -25,10 +26,11 @@ export class Agent extends Phaser.GameObjects.Sprite {
     history: any[] = [];
 
 
+
     constructor(scene: Phaser.Scene, x: number = 0, y: number = 0, color: number = 0xffffff, cb: Function, id: number) {
         super(scene, x, y, 'agent');
         this.id = id;
-        console.log(`Agent ${this.id} created`);
+        // console.log(`Agent ${this.id} created`);
         this.scene = scene;
         this.x = x;
         this.y = y;
@@ -40,83 +42,21 @@ export class Agent extends Phaser.GameObjects.Sprite {
     draw() {
         if(this.scene){
             // this.makeTexture();
-            this.agent = this.scene.add.sprite(this.x, this.y, `mouse_texture`).setOrigin(0).setDepth(15);
-            this.agent.anims.play(`walk`);
+            this.agent = this.scene.add.sprite(this.x, this.y, `mouse_texture`).setOrigin(0).setDepth(15).play(`walk`)
+            
+            // this.agent.anims.play(`walk`);
         }
         
     }
-    makeTexture(){
-        // create a texture from a string array of colors
-        let bar = [
-            ".11.11..",
-            "1441441.",
-            "1411141.",
-            ".11111..",
-            ".10101..",
-            ".11211..",
-            "111111.4",
-            "11111144"
-        ]
-        if(this.scene){
-            this.scene.textures.generate(`${this.id}_texture`, {
-                data : bar,
-                pixelWidth : 8
-            });
-  
-            this.createAnimation();
-        }
-          
-    }
-    createAnimation(){
-       
-       
-        let frame_3 = [
-            ".11.11..",
-            "1441441.",
-            "1441441.",
-            ".11111..",
-            ".10101..",
-            ".11211..",
-            "111111.4",
-            "10111144"
-        ];
-        let frame_4 = [
-            ".11.11..",
-            "1441441.",
-            "1441441.",
-            ".11111..",
-            ".10101..",
-            ".11211..",
-            "111111.4",
-            "11110144"
-        ];
 
-        this.scene.textures.generate(`${this.id}_ani3`, {
-            data : frame_3,
-            pixelWidth : 8
-        });
-        this.scene.textures.generate(`${this.id}_ani4`, {
-            data : frame_4,
-            pixelWidth : 8
-        });
-        // create a phaser animation from the frames
-        this.scene.anims.create({
-            key: `${this.id}_walk`,
-            frames: [
-                { key: `${this.id}_ani3`, frame: `${this.id}_ani03` },
-                { key: `${this.id}_ani4`, frame: `${this.id}_ani04` }
-            ],
-            frameRate: 2,
-            repeat: -1
-        });
-    }
     getHistory(){
         return this.history;
     }
     getCurrentCell() {
         return this.currentCell;
     }
-    setCurrentCell(cell) {
+
+    async setCurrentCell(cell) {
     
         if(!cell){
             return;
@@ -134,7 +74,7 @@ export class Agent extends Phaser.GameObjects.Sprite {
             this.endingQ = cell.getQ();
             // console.log(`Agent ${this.id} from too many moves: ${this.history.length}`);
             this.cb(cell.getQ(), this.moves, this.id, false)
-            console.log(`Agent ${this.id} died from too many moves.`);
+            // console.log(`Agent ${this.id} died from too many moves.`);
             this.makeExplosion();
             // document.getElementById(`stats`).innerHTML = `Agent ${this.id} Score: ${this.score}`;
             // document.getElementById(`historystats`).innerHTML += `<li>Agent ${this.id} Q:${this.endingQ} M:${this.moves}</li>`;
@@ -143,12 +83,17 @@ export class Agent extends Phaser.GameObjects.Sprite {
 
         if(cell.id === 99){
             // winner
-           
+            
+          
             this.alive = false;
             this.currentCell = cell;
             this.endingQ = cell.getQ();
+            this.agent.play(`eat`).on('animationcomplete', () => {
+            this.agent.destroy();
+            });
             this.scene.sound.play('win', { volume: 0.15 });
             this.cb(cell.getQ(), this.moves, this.id, false); 
+      
             
         } else if(cell.status !== 0){
             // console.log(`Agent ${this.id} moved to Cell: ${cell}`);
@@ -162,7 +107,20 @@ export class Agent extends Phaser.GameObjects.Sprite {
             this.currentCell = cell;
             this.endingQ = cell.getQ();
             
-          
+            if(cell.id === this.history[this.history.length - 2] + 1){ // right
+                this.x += 50;
+                
+            } else if(cell.id === this.history[this.history.length - 2] - 1){ // left
+                this.x -= 50;
+                
+            } else if(cell.id === this.history[this.history.length - 2] + 10){ // down
+             
+                this.y +=  50;
+            } else if(cell.id === this.history[this.history.length - 2] - 10){ // up
+             
+                this.y -=  50;
+            }
+            
             this.scene.sound.play('pop', { volume: 0.15 });
 
             cell.setColor(0xff0000);
@@ -185,10 +143,14 @@ export class Agent extends Phaser.GameObjects.Sprite {
             this.x = cell.x + 20;
             this.y = cell.y + 20;
             this.update();
+
             return true
         } else {
             // console.log(`Agent ${this.id} is dead.`);
-            this.agent.destroy();
+            if(this.agent){
+                this.agent.destroy();
+            }
+            
             
             return false
         } 
