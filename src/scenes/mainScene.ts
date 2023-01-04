@@ -397,7 +397,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                     // pause for 1 second
 
                     await timer(750);
-                } 
+                }
 
             } else {
                 // we are gathering data or we have no trained model
@@ -460,7 +460,9 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                     // pause for 50 ms if gathering data or 1 second if not
                     await timer(fastMode ? 100 : 750);
 
-                } 
+                } else {
+                    await timer(1000);
+                }
             }
 
         }
