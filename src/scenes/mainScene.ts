@@ -138,6 +138,8 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         return ((this.tilesLearned.length / this.grid.grid.filter(r => r.status === 4).length) * 100).toFixed(2);
     }
     async loadModel() {
+        self.deleteIntro();
+        
         const jsonUpload = document.getElementById('json-upload');
         const weightsUpload = document.getElementById('weights-upload');
 
@@ -182,7 +184,15 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         if (d2Check) {
             AI_LOAD.attributes.removeNamedItem('disabled');
         }
+        let d3Check = GATHER_DATA.attributes.getNamedItem('disabled');
+            if (d3Check) {
+                GATHER_DATA.attributes.removeNamedItem('disabled');
+            }
 
+            let d4Check = START.attributes.getNamedItem('disabled');
+            if (d4Check) {
+                START.attributes.removeNamedItem('disabled');
+            }
         this.clearTrainingData();
         self.aiLoaded = true;
         return true
