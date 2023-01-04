@@ -143,10 +143,11 @@ export class Agent extends Phaser.GameObjects.Sprite {
 
         if(cell.id === 99){
             // winner
-            this.scene.sound.play('win', { volume: 0.15 });
+           
             this.alive = false;
             this.currentCell = cell;
             this.endingQ = cell.getQ();
+            this.scene.sound.play('win', { volume: 0.15 });
             this.cb(cell.getQ(), this.moves, this.id, false); 
             
         } else if(cell.status !== 0){
@@ -157,20 +158,24 @@ export class Agent extends Phaser.GameObjects.Sprite {
             // console.log(`history: ${this.history.length}`);
             // this.history[this.history.length - 1].cell.updateStatus(4);
         } else {
+            
+            this.currentCell = cell;
+            this.endingQ = cell.getQ();
+            
+          
             this.scene.sound.play('pop', { volume: 0.15 });
 
             cell.setColor(0xff0000);
             setTimeout(() => {
                 cell.setColor(0xBCDEE6);
             },250);
-            this.alive = false;
-            this.endingQ = cell.getQ();
+            
             this.cb(cell.getQ(), this.moves, this.id, false)
             this.makeExplosion();
-            console.log(`Agent ${this.id} died at cell: ${cell.id}`);
-            this.agent.destroy();
-
+            this.alive = false;
         }
+
+
     }
     move(cell) {
         
@@ -182,7 +187,7 @@ export class Agent extends Phaser.GameObjects.Sprite {
             this.update();
             return true
         } else {
-            console.log(`Agent ${this.id} is dead.`);
+            // console.log(`Agent ${this.id} is dead.`);
             this.agent.destroy();
             
             return false
@@ -209,11 +214,14 @@ export class Agent extends Phaser.GameObjects.Sprite {
 
     }
     makeExplosion(){
-        let explosion = this.scene.add.sprite(this.x + 25, this.y + 50, `explosion`);
-        explosion.anims.play(`explode`);
-        explosion.on('animationcomplete', () => {
-            explosion.destroy();
-        });
+        if(this.scene){
+            let explosion = this.scene.add.sprite(this.x + 25, this.y + 50, `explosion`);
+            explosion.anims.play(`explode`);
+            explosion.on('animationcomplete', () => {
+                explosion.destroy();
+            });
+        }
+        
     }
     update() {
         this.agent.x = this.x;
