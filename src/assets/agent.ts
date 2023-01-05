@@ -84,16 +84,11 @@ export class Agent extends Phaser.GameObjects.Sprite {
         if(cell.id === 99){
             // winner
             
-          
-            this.alive = false;
             this.currentCell = cell;
             this.endingQ = cell.getQ();
-            this.agent.play(`eat`).on('animationcomplete', () => {
-            this.agent.destroy();
-            });
             this.scene.sound.play('win', { volume: 0.15 });
             this.cb(cell.getQ(), this.moves, this.id, false); 
-      
+            this.alive = false;
             
         } else if(cell.status !== 0){
             // console.log(`Agent ${this.id} moved to Cell: ${cell}`);
@@ -138,7 +133,20 @@ export class Agent extends Phaser.GameObjects.Sprite {
     move(cell) {
         
         this.moves++
+        if(cell.id === 99){
+            this.x = cell.x + 50;
+            this.y = cell.y + 50;
+            let t = this.scene.add.text(500, 500, `Winner!`, { fontSize: '100', color: '#ff0000' }).setOrigin(0).setDepth(200);
+            console.log(`Agent ${this.id} won!`);
+            this.agent.anims.play('eat').on('animationcomplete', () => {
+                this.alive = false;
+            });
+            setTimeout(() => {
+                t.destroy();
+            }, 1000);
+        }
         this.setCurrentCell(cell)
+
         if(this.alive){
             this.x = cell.x + 20;
             this.y = cell.y + 20;
@@ -150,8 +158,6 @@ export class Agent extends Phaser.GameObjects.Sprite {
             if(this.agent){
                 this.agent.destroy();
             }
-            
-            
             return false
         } 
         

@@ -23,8 +23,7 @@
         <div class="col-9">
           <div id="game" style="border-radius: 10px;"></div>
         </div>
-        <div class="col"       
-           style="padding: 10px">
+        <div class="col" style="margin-left: 10px;padding: 10px; border: 1px solid black;border-radius: 7px;">
         <div class="container" style="padding: 7px;">
           <p class="bg-info-subtle"style="padding: 10px;border-radius: 5px"><span style="font-size: xx-large">👨🏻‍💻</span>&nbsp;<span id="dataCount">No Data Gathered</span></p>
           <p style="padding: 5px" id="agentsHealth"></p>
@@ -35,9 +34,9 @@
 
         <div style="padding: 7px;">
           
-        <div id="difficulty">
+
           <label for="difficulty" class="form-label"
-          ><span style="font-size: xx-large;">🕹</span>&nbsp;&nbsp;&nbsp;Maze Difficulty - <span id="updateDiff">1</span></label
+          ><span style="font-size: xx-large;">🕹</span>&nbsp;&nbsp;&nbsp;Maze Difficulty: <span id="updateDiff">1</span></label
         >
         <input
           type="range"
@@ -48,38 +47,42 @@
           max="10"
           step="1"
         />
-        </div>
+
         <br />
           <label for="agentcount" class="form-label">
-            <span style="font-size: xx-large;">🕵🏻‍♀️</span>&nbsp;&nbsp;&nbsp;Agents - 
-            <span id="agents">10</span>
+            <span style="font-size: xx-large;">🕵🏻‍♀️</span>&nbsp;&nbsp;&nbsp;Agents: 
+            <span id="agents">5</span>
           </label>
         <input
           type="range"
-          value="10"
+          value="5"
           id="agentcount"
           class="form-range"
           min="10"
           max="100"
-          step="10"
+          step="5"
         />
         
         <br />
         <label for="epochcount" class="form-label">
-          <span style="font-size:xx-large">⏱</span>&nbsp;&nbsp;&nbsp;Epochs - 
-          <span id="epochsnum">100</span>
+          <span style="font-size:xx-large">⏱</span>&nbsp;&nbsp;&nbsp;Epochs: 
+          <span id="epochsnum">50</span>
         </label>
       <input
         type="range"
-        value="100"
+        value="50"
         id="epochcount"
         class="form-range"
         min="10"
         max="100"
         step="10"
       />
-      <input type="checkbox" id="fastmode"> <label for="fastmode">Fast Mode&nbsp;&nbsp;&nbsp;<span style="font-size: xx-large;">🏎</span></label>
-        <hr />
+      <hr />
+
+      <input type="checkbox" id="fastmode"> <label for="fastmode">Fast Mode&nbsp;&nbsp;&nbsp;<span style="font-size: xx-large;">🏎</span></label><br />
+      <input type="checkbox" id="linemode"> <label for="fastmode">Line Mode&nbsp;&nbsp;&nbsp;<span style="font-size: xx-large;">📉</span></label>
+
+      <hr />
           
         </div>
          <div  style="padding: 7px;">
@@ -88,8 +91,6 @@
           <button type="button" id="dlBoard" class="btn btn-block btn-outline-dark" disabled><i class="bi bi-cloud-download"></i>&nbsp;Save Model</button>
 
          </div>
-
-          
     <br />
     <hr />
     <button type="button" style="width: 100%" id="music" class="btn btn-block btn-outline-dark"><span style="font-size: 20px">🎶</span>&nbsp;Music</button>
@@ -97,7 +98,6 @@
       <a class="btn btn-block btn-outline-info" style="width: 100%" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
         <span style="font-size: x-large;">🤖</span>&nbsp;&nbsp;Load Trained AI
       </a>
-
 
     <div class="collapse" id="collapseExample">
       <div class="card" style="padding: 5px;margin: 5px">
@@ -114,7 +114,7 @@
         <!-- <button type="button" id="train" class="btn btn-block">Train</button> -->
       </div>
     </div>
-    <hr />
+
     <h4 id="winner" style="color:crimson;width: 100%;text-align: center;"></h4>
           <div id="prediction" style="width: 100%;height: 100%;text-align: center;">
 

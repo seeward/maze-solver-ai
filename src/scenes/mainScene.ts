@@ -12,6 +12,12 @@ const FAST_MODE = document.getElementById('fastmode');
 FAST_MODE.addEventListener('change', (e) => {
     fastMode = (e.target as any).checked;
 })
+let lineMode = false;
+const LINE_MODE = document.getElementById('linemode');
+// console.log((FAST_MODE as any).value);
+LINE_MODE.addEventListener('change', (e) => {
+    lineMode = (e.target as any).checked;
+})
 const DATA_COUNT = document.getElementById('dataCount');
 const PREDICTION = document.getElementById('prediction');
 const AI_STATUS = document.getElementById('aiStatus');
@@ -95,12 +101,13 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
     }
     createIntro() {
         let flipper = false
-        this.introElements.push(new MainGrid(this, 200, 200, 10, 4))
+        // this.introElements.push(new MainGrid(this, 200, 200, 10, 4))
         this.introElements.push(this.add.rectangle(75, 75, 850, 600, 0xffffff).setDepth(99).setOrigin(0, 0).setAlpha(0.95));
-        this.introElements.push(this.add.text(125, 125, '🤖', { fontSize: '100px', color: '#000000' }).setDepth(100));
-        this.introElements.push(this.add.text(275, 125, 'Welcome to Maze Solver AI', { fontSize: '32px', color: '#000000' }).setDepth(100));
-        this.introElements.push(this.add.text(275, 175, 'This is a simple maze solving AI that uses a neural \nnetwork to learn how to solve a maze.', { fontSize: '16px', color: '#000000' }).setDepth(100));
-        this.introElements.push(this.add.text(275, 225, 'The AI is trained using a genetic algorithm that \nuses a population of agents to learn how to solve \nthe maze.', { fontSize: '16px', color: '#000000' }).setDepth(100));
+        this.introElements.push(this.add.image(110, 125, 'logo').setDepth(100).setScale(0.2).setOrigin(0));
+        // this.introElements.push(this.add.text(125, 125, '🤖', { fontSize: '100px', color: '#000000' }).setDepth(100));
+        this.introElements.push(this.add.text(300, 125, 'Welcome to Maze Solver AI', { fontSize: '32px', color: '#000000' }).setDepth(100));
+        this.introElements.push(this.add.text(300, 175, 'This is a simple maze solving AI that uses a neural \nnetwork to learn how to solve a maze.', { fontSize: '16px', color: '#000000' }).setDepth(100));
+        this.introElements.push(this.add.text(300, 225, 'The AI is trained using a genetic algorithm that \nuses a population of agents to learn how to solve \nthe maze.', { fontSize: '16px', color: '#000000' }).setDepth(100));
         this.introElements.push(this.add.text(125, 325, 'Step 1: Generate a Maze of a chosen difficulty.', { fontSize: '18px', color: '#000000' }).setDepth(100));
         this.introElements.push(this.add.text(125, 375, 'Step 2: Create some AI agents to learn the maze by gathering data.', { fontSize: '18px', color: '#000000' }).setDepth(100));
         this.introElements.push(this.add.text(125, 425, 'Step 3: Train the AI using the gathered data for a number of Epochs.', { fontSize: '18px', color: '#000000' }).setDepth(100));
@@ -120,6 +127,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
     }
     preload() {
         this.load.image('inside', 'insidemouse.jpeg');
+        this.load.image('logo', 'logo.webp');
         this.load.audio('theme', 'PinkyAndTheBrain.mp3');
         this.load.audio('pop', 'shortpop.wav');
         this.load.audio('win', 'winner.wav');
@@ -243,6 +251,8 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         this.AI.saveModel();
     }
     async trainModel() {
+        const y4 = document.getElementById('gatheringDataFlag');
+                y4.innerHTML = 'Training AI model on gathered data...';
         this.agents.forEach(a => a.destroy());
         if (!this.AI.active) {
             await this.AI.createModel()
@@ -297,7 +307,14 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         // console.log(`agents: ${self.agents}`)
         if (self.gatherData) {
             DATA_COUNT.innerHTML = `Data Length: ${self.getTrainingDataLength()}`;
-
+            if(self.getTrainingDataLength() > 20000){
+             
+                const y = document.getElementById('gatheringDataFlag');
+                y.innerHTML = 'Gathering Data Complete';
+                self.agents.forEach(a => a.destroy());
+                self.agents = [];
+                self.trainModel();
+            }
 
             if (localStorage.getItem('trainingDataX') === null && localStorage.getItem('trainingDataY') === null) {
                 localStorage.setItem('trainingDataX', JSON.stringify(self.trainingDataX));
@@ -314,22 +331,9 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                 }
 
             }
-        }
-        if (win) {
+        } else if (win) {
             document.getElementById(`winner`).innerHTML = `🕵🏻‍♀️ ${id} made it to the 🧀!`
         }
-        // if (self.agents.length === 1) {
-        //     // console.log('all agents done');
-        //     // console.log(self.agents.length);
-        //     self.agents.forEach(a => a.destroy());
-        //     self.agents = [];
-        //     let sortedArr = sortArray(_results, 'q');
-        //     document.getElementById(`winner`).innerHTML = `W:${sortedArr[0].id} M:${sortedArr[0].moves} Q:${sortedArr[0].q}`;
-        //     _results.slice(0, _results.length - 1);
-
-        // } 
-
-
 
     }
     createAgent() {
@@ -341,7 +345,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
     ////////////////////////////////////
     async startAgents() {
         agentsDead = 0;
-        await timer(2000);
+        await timer(1000);
         if (self.agents.length === 0) {
             return;
         }
@@ -349,14 +353,13 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         this.currentAgent = self.agents[0] as Agent;
         if(this.currentAgent){
             this.currentAgent.setCurrentCell(self.grid.grid.filter(r => r.status === 4 && r.id !== 99)[Math.floor(Math.random() * self.grid.grid.length)]);
+            this.currentAgent.currentCell.setColor(0x212121)
         } else {
             return;
         }
 
-        // set agent on a random open cell - status 4
         // draw the agent texture
         this.currentAgent.draw();
-        // console.log(agent);
         let nextMoves: GridCell[] = []; // for the next possible moves
         let nextMove: GridCell = undefined; // for the actual next move
 
@@ -369,8 +372,8 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                     if (self.gatherData) {
                         // console.log('no more agents');
                         self.trainModel();
-                        const y = document.getElementById('gatheringDataFlag');
-                        y.innerHTML = 'Training AI model...';
+                        const y2 = document.getElementById('gatheringDataFlag');
+                        y2.innerHTML = 'Training AI model...';
                         agentsDead = 0;
                     }
                     break;
@@ -394,7 +397,6 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                 let ea = self.grid.getNumArray()
                 // set the target cell status - will be for moving targets in future?
                 ea[99] = 99;
-
                 // set the current agent position with a status 3
                 ea[this.currentAgent.getCurrentCell().id] = 3;
                 // get the possible next moves
@@ -407,7 +409,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                 // try to move to the nextMove which will add reward to the agent
                 if (this.currentAgent.move(possNextMoves[hightest])) {
                     // pause for 1 second
-
+                    self.prevCell = this.currentAgent.getCurrentCell();
                     await timer(750);
                 }
 
@@ -434,10 +436,17 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
 
                 // try to move to the nextMove which will add reward to the agent
                 if (this.currentAgent.move(nextMove)) {
+                    // the agent survived and has the last cell reward
+                    self.prevCell = nextMove
+                    
 
                     if (self.tilesLearned.indexOf(nextMove.id) === -1) {
                         self.tilesLearned.push(nextMove.id);
                         // console.log(self.tilesLearned.length);
+                    }
+                    if(self.prevCell !== undefined && self.currentAgent.history.length >=3 && lineMode){
+                        // console.log(self.currentAgent.history);
+                        self.trail.push(this.add.line(0,0,self.prevCell.x + 50 ,self.prevCell.y + 50 ,self.grid.getCellById(self.currentAgent.history[self.currentAgent.history.length -2]).x + 50, self.grid.getCellById(self.currentAgent.history[self.currentAgent.history.length -2]).y + 50,0xc1c1c1,0.25).setOrigin(0));
                     }
                     // get the possible next moves for the agent to train the NN
                     // this will be GridCells if a possible move or a number if not
@@ -468,12 +477,11 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                     // add the Q values for the current cell to the training data
                     self.trainingDataY.push(futureQSet);
                     // set the color to white to leave a trail of visited cells
-                    nextMove.setColor(0x646464);
+                    nextMove.setColor(0x212121);
                     // pause for 50 ms if gathering data or 1 second if not
                     await timer(fastMode ? 100 : 750);
-
                 } else {
-                    await timer(1000);
+                    await timer(fastMode ? 100 : 750);
                 }
             }
 
