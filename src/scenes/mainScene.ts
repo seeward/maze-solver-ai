@@ -128,7 +128,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
     preload() {
         this.load.image('inside', 'insidemouse.jpeg');
         this.load.image('logo', 'logo.webp');
-        this.load.audio('theme', 'PinkyAndTheBrain.mp3');
+        // this.load.audio('theme', 'PinkyAndTheBrain.mp3');
         this.load.audio('pop', 'shortpop.wav');
         this.load.audio('win', 'winner.wav');
     }
