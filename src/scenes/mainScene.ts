@@ -76,7 +76,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
     trainingDataX: any[] = [];
     trainingDataY: any[] = [];
     agentIdCounter: number = 0;
-    numAgents: number = 10;
+    numAgents: number;
     ranger: number;
     agentSpeed: string = 'fast';
     gatherData: boolean = false;
@@ -352,10 +352,18 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         // get the first agent in the array
         this.currentAgent = self.agents[0] as Agent;
         if(this.currentAgent){
-            this.currentAgent.setCurrentCell(self.grid.grid.filter(r => r.status === 4 && r.id !== 99)[Math.floor(Math.random() * self.grid.grid.length)]);
-            this.currentAgent.currentCell.setColor(0x212121)
+            console.log('current agent before set current cell')
+            this.currentAgent.setCurrentCell(self.grid.grid.filter(r => r.status === 4 && r.id !== 99)[Math.floor(Math.random() * self.grid.grid.length)] || self.grid.grid[0]);
+            console.log('current agent after set current cell')
+            if(this.currentAgent.currentCell === undefined){
+                this.currentAgent.currentCell = self.grid.grid[0];
+                this.currentAgent.currentCell.setColor(0x212121)
+            } else {
+                this.currentAgent.currentCell.setColor(0x212121)
+            }
+            
         } else {
-            return;
+            console.log('no current agent')
         }
 
         // draw the agent texture
@@ -381,7 +389,9 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                     
                     this.currentAgent = self.agents[0] as Agent;
                     if(this.currentAgent){
+                        console.log('current agent before set current cell 2')
                         this.currentAgent.setCurrentCell(self.grid.grid.filter(r => r.status === 4 && r.id !== 99)[Math.floor(Math.random() * self.grid.grid.length)]);
+                        console.log('current agent after set current cell 2')
                         this.currentAgent.draw();
                     } else {
                         break;
@@ -393,6 +403,9 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
             // we have a trained / loaded model and not gathering data
             // AI is predicting the next move
             if (self.aiLoaded && !self.gatherData) {
+                if( this.currentAgent.getCurrentCell() === null){
+                    this.currentAgent.setCurrentCell(self.grid.grid.filter(r => r.status === 4 && r.id !== 99)[Math.floor(Math.random() * self.grid.grid.length)] || self.grid.grid[0]);
+                }
                 // get a flat 1D array of the grid
                 let ea = self.grid.getNumArray()
                 // set the target cell status - will be for moving targets in future?
@@ -903,8 +916,8 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         });
 
         AGENTS.addEventListener('change', (e) => {
-            this.numAgents = parseInt((<HTMLInputElement>e.target).value);
-            AGENTSUPDATE.innerHTML = `${this.numAgents}`;
+            self.numAgents = parseInt((<HTMLInputElement>e.target).value);
+            AGENTSUPDATE.innerHTML = `${self.numAgents}`;
 
         });
 

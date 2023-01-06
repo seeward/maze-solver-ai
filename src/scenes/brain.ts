@@ -28,6 +28,8 @@ export class MazeSolver {
   model: tf.Sequential | tf.LayersModel; // Seq if training, Layers if loading
   active: boolean = false;
   constructor() {
+    tf.setBackend('webgl'); // to use shader on the GPU
+    console.log(tf.getBackend());
     this.model = tf.sequential(); // Sequential model to start
   }
   async createModel(): Promise<void> {
@@ -66,6 +68,7 @@ export class MazeSolver {
         }
       }
     });
+    
     xs.dispose();
     ys.dispose();
   }

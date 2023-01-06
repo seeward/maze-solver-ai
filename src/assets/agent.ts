@@ -131,19 +131,17 @@ export class Agent extends Phaser.GameObjects.Sprite {
 
     }
     move(cell) {
-        
+        if(!cell && !cell.hasOwnProperty('id')){
+            return false;
+        }
         this.moves++
         if(cell.id === 99){
             this.x = cell.x + 50;
             this.y = cell.y + 50;
-            let t = this.scene.add.text(500, 500, `Winner!`, { fontSize: '100', color: '#ff0000' }).setOrigin(0).setDepth(200);
-            console.log(`Agent ${this.id} won!`);
-            this.agent.anims.play('eat').on('animationcomplete', () => {
-                this.alive = false;
-            });
+            let t = this.scene.add.text(cell.x, cell.y + 40, `Winner!`, { fontSize: '25px', color: '#ff0000' }).setOrigin(0).setDepth(200);
             setTimeout(() => {
                 t.destroy();
-            }, 1000);
+            }, 1500);
         }
         this.setCurrentCell(cell)
 
