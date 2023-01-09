@@ -352,9 +352,9 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         // get the first agent in the array
         this.currentAgent = self.agents[0] as Agent;
         if(this.currentAgent){
-            console.log('current agent before set current cell')
+            // console.log('current agent before set current cell')
             this.currentAgent.setCurrentCell(self.grid.grid.filter(r => r.status === 4 && r.id !== 99)[Math.floor(Math.random() * self.grid.grid.length)] || self.grid.grid[0]);
-            console.log('current agent after set current cell')
+            // console.log('current agent after set current cell')
             if(this.currentAgent.currentCell === undefined){
                 this.currentAgent.currentCell = self.grid.grid[0];
                 this.currentAgent.currentCell.setColor(0x212121)
@@ -389,9 +389,9 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                     
                     this.currentAgent = self.agents[0] as Agent;
                     if(this.currentAgent){
-                        console.log('current agent before set current cell 2')
+                        // console.log('current agent before set current cell 2')
                         this.currentAgent.setCurrentCell(self.grid.grid.filter(r => r.status === 4 && r.id !== 99)[Math.floor(Math.random() * self.grid.grid.length)]);
-                        console.log('current agent after set current cell 2')
+                        // console.log('current agent after set current cell 2')
                         this.currentAgent.draw();
                     } else {
                         break;

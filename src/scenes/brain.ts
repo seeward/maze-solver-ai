@@ -27,9 +27,10 @@ export class MazeSolver {
 
   model: tf.Sequential | tf.LayersModel; // Seq if training, Layers if loading
   active: boolean = false;
-  constructor() {
+  constructor(debug?: boolean) {
     tf.setBackend('webgl'); // to use shader on the GPU
-    console.log(tf.getBackend());
+    if (debug) tf.enableDebugMode();
+    console.log(`Tensorflow backend: ${tf.getBackend()}`);
     this.model = tf.sequential(); // Sequential model to start
   }
   async createModel(): Promise<void> {
@@ -68,7 +69,7 @@ export class MazeSolver {
         }
       }
     });
-    
+
     xs.dispose();
     ys.dispose();
   }
