@@ -485,6 +485,8 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                     ea[99] = 99
                     // set the current agent position with a status 3
                     ea[this.currentAgent.getCurrentCell().id] = 3;
+                    console.log(ea);
+                    console.log(futureQSet);
                     // add the current grid state to the training data
                     self.trainingDataX.push(ea);
                     // add the Q values for the current cell to the training data
