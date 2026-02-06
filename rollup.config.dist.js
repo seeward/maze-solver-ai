@@ -1,7 +1,7 @@
-import commonjs from 'rollup-plugin-commonjs';
-import resolve from 'rollup-plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
+import { nodeResolve } from '@rollup/plugin-node-resolve';
 import replace from '@rollup/plugin-replace';
-import { uglify } from 'rollup-plugin-uglify';
+import terser from '@rollup/plugin-terser';
 import typescript from 'rollup-plugin-typescript2';
 
 export default {
@@ -36,8 +36,10 @@ export default {
         }),
 
         //  Parse our .ts source files
-        resolve({
-            extensions: [ '.ts', '.tsx' ]
+        nodeResolve({
+            browser: true,
+            extensions: [ '.mjs', '.js', '.json', '.ts', '.tsx' ],
+            preferBuiltins: false
         }),
 
         //  We need to convert the Phaser 3 CJS modules into a format Rollup can use:
@@ -57,8 +59,8 @@ export default {
         //  See https://www.npmjs.com/package/rollup-plugin-typescript2 for config options
         typescript(),
 
-        //  See https://www.npmjs.com/package/rollup-plugin-uglify for config options
-        uglify({
+        //  See https://www.npmjs.com/package/@rollup/plugin-terser for config options
+        terser({
             mangle: false
         })
 

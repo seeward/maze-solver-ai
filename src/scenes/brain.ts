@@ -1,4 +1,4 @@
-import * as tf from '@tensorflow/tfjs/dist/tf.fesm.js';
+import * as tf from '@tensorflow/tfjs';
 
 const d = document.getElementById('dataCount')
 
@@ -62,9 +62,11 @@ export class MazeSolver {
 
   }
   async trainModel(X: number[][], y: number[][], epochs = 20): Promise<void> {
-    const deduped = dedupeSamples(X, y);
-    const xs = tf.tensor2d(deduped.X);
-    const ys = tf.tensor2d(deduped.y);
+    if (!X || !y || X.length === 0 || y.length === 0) {
+      throw new Error('No training data available.');
+    }
+    const xs = tf.tensor2d(X);
+    const ys = tf.tensor2d(y);
 
     await this.model.fit(xs, ys, {
       epochs: epochs,
@@ -77,7 +79,7 @@ export class MazeSolver {
           d.innerHTML = `Epoch ${epoch + 1}/${epochs} : loss = ${logs.loss.toFixed(4)}`;
         },
         onTrainEnd: () => {
-          console.log(`Training complete. Samples used: ${deduped.X.length}`);
+          console.log(`Training complete. Samples used: ${X.length}`);
         },
       }
     });
@@ -119,10 +121,10 @@ export class MazeSolver {
     return true
   }
   getTrainedWeights(): number[] {
-    return this.model.getWeights()[0].dataSync();
+    return Array.from(this.model.getWeights()[0].dataSync());
   }
   getTrainedBiases(): number[] {
-    return this.model.getWeights()[1].dataSync();
+    return Array.from(this.model.getWeights()[1].dataSync());
   }
   createModelFromWeights(weights: number[], biases: number[]): void {
     this.model = tf.sequential() as tf.Sequential;
@@ -145,32 +147,3 @@ export class MazeSolver {
   
 
 }
-
-
-function dedupeSamples(X: number[][], y: number[][]): { X: number[][], y: number[][] } {
-  const seen = new Set<string>();
-  const dedupedX: number[][] = [];
-  const dedupedY: number[][] = [];
-
-  for (let i = 0; i < X.length; i++) {
-    const xSample = X[i];
-    const ySample = y[i];
-    if (!xSample || !ySample) {
-      continue;
-    }
-
-    const key = `${xSample.join(',')}|${ySample.join(',')}`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      dedupedX.push(xSample);
-      dedupedY.push(ySample);
-    }
-  }
-
-  return { X: dedupedX, y: dedupedY };
-}
-
-
-
-
-

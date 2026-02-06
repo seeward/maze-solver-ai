@@ -340,6 +340,18 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         self.agentIdCounter++;
         return new Agent(self, 20, 30, 0xffffff, self.handleGameOver, self.agentIdCounter);
     }
+    getRandomTraversableCell(excludeTarget: boolean = true): GridCell {
+        const candidates = this.grid.grid.filter((cell) => {
+            if (cell.status !== 4) {
+                return false;
+            }
+            return excludeTarget ? cell.id !== 99 : true;
+        });
+        if (candidates.length === 0) {
+            return this.grid.grid[0];
+        }
+        return candidates[Math.floor(Math.random() * candidates.length)];
+    }
     ///////////////////////
     // the main Agent loop is in here
     ////////////////////////////////////
@@ -353,7 +365,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         this.currentAgent = self.agents[0] as Agent;
         if(this.currentAgent){
             // console.log('current agent before set current cell')
-            this.currentAgent.setCurrentCell(self.grid.grid.filter(r => r.status === 4 && r.id !== 99)[Math.floor(Math.random() * self.grid.grid.length)] || self.grid.grid[0]);
+            this.currentAgent.setCurrentCell(this.getRandomTraversableCell(true));
             // console.log('current agent after set current cell')
             if(this.currentAgent.currentCell === undefined){
                 this.currentAgent.currentCell = self.grid.grid[0];
@@ -390,7 +402,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                     this.currentAgent = self.agents[0] as Agent;
                     if(this.currentAgent){
                         // console.log('current agent before set current cell 2')
-                        this.currentAgent.setCurrentCell(self.grid.grid.filter(r => r.status === 4 && r.id !== 99)[Math.floor(Math.random() * self.grid.grid.length)]);
+                        this.currentAgent.setCurrentCell(this.getRandomTraversableCell(true));
                         // console.log('current agent after set current cell 2')
                         this.currentAgent.draw();
                     } else {
@@ -404,7 +416,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
             // AI is predicting the next move
             if (self.aiLoaded && !self.gatherData) {
                 if( this.currentAgent.getCurrentCell() === null){
-                    this.currentAgent.setCurrentCell(self.grid.grid.filter(r => r.status === 4 && r.id !== 99)[Math.floor(Math.random() * self.grid.grid.length)] || self.grid.grid[0]);
+                    this.currentAgent.setCurrentCell(this.getRandomTraversableCell(true));
                 }
                 // get a flat 1D array of the grid
                 let ea = self.grid.getNumArray()
@@ -973,7 +985,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
     getBestMoveDirection(predictions: number[], possibleMoves: any[], history: number[]) {
         const ranked = predictions
             .map((score, direction) => ({ score, direction, move: possibleMoves[direction] }))
-            .filter((entry) => entry.move && typeof entry.move !== 'number')
+            .filter((entry) => entry.move && typeof entry.move !== 'number' && entry.move.status !== 0)
             .sort((a, b) => b.score - a.score);
 
         if (ranked.length === 0) {
@@ -993,7 +1005,7 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
         }
         while (self.agents.length < self.numAgents) {
             let a = self.createAgent();
-            a.setCurrentCell(self.grid.grid.filter(r => r.status === 4)[Math.floor(Math.random() * self.grid.grid.length)]);
+            a.setCurrentCell(this.getRandomTraversableCell(true));
             self.agents.push(a);
         }
     }
