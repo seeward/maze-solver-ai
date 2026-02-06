@@ -415,15 +415,18 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                 // get the possible next moves
                 let possNextMoves = self.grid.getPossibleNextMoves(this.currentAgent.getCurrentCell());
                 // let the AI predict the next move from just the maze state
-                let nextMove = await self.AI.predict([ea]); // returns a 1D array of the next move
-                // get the index of the highest value in the array
-                let hightest = self.getDirection(nextMove);
-                PREDICTION.innerHTML = self.getDirectionArrow(hightest);
+                const movePredictions = await self.AI.predict([ea]); // returns [up,down,left,right]
+                // choose the highest-scoring legal move and avoid loops when possible
+                const bestDirection = self.getBestMoveDirection(movePredictions, possNextMoves, this.currentAgent.history);
+                const chosenMove = possNextMoves[bestDirection];
+                PREDICTION.innerHTML = self.getDirectionArrow(bestDirection);
                 // try to move to the nextMove which will add reward to the agent
-                if (this.currentAgent.move(possNextMoves[hightest])) {
+                if (chosenMove && this.currentAgent.move(chosenMove)) {
                     // pause for 1 second
                     self.prevCell = this.currentAgent.getCurrentCell();
-                    await timer(750);
+                    await timer(fastMode ? 100 : 750);
+                } else {
+                    this.currentAgent.alive = false;
                 }
 
             } else {
@@ -469,11 +472,14 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                     // filter out the numbers from the array so only GridCells remain
                     nextMoves = nextMoves.filter(r => typeof r !== 'number');
                     let futureQSet = [];
-                    // below creates [up,down.left,right] Q values for the current cell
+                    const DISCOUNT_FACTOR = 0.9;
+                    // below creates [up,down,left,right] Q values for the current cell
                     for (let i = 0; i < setForQ.length; i++) {
-                        // if the next move is a GridCell then get the reward
+                        // if the next move is a GridCell then blend immediate + discounted future reward
                         if (typeof setForQ[i] !== 'number') {
-                            futureQSet[i] = setForQ[i].getReward();
+                            const lookAheadMoves = self.grid.getPossibleNextMoves(setForQ[i]).filter(r => typeof r !== 'number');
+                            const bestFutureReward = lookAheadMoves.length > 0 ? Math.max(...lookAheadMoves.map(r => r.getReward())) : 0;
+                            futureQSet[i] = setForQ[i].getReward() + (DISCOUNT_FACTOR * bestFutureReward);
                         } else {
                             // if the next move is a number then set the Q value to 0
                             futureQSet[i] = 0;
@@ -485,8 +491,6 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
                     ea[99] = 99
                     // set the current agent position with a status 3
                     ea[this.currentAgent.getCurrentCell().id] = 3;
-                    console.log(ea);
-                    console.log(futureQSet);
                     // add the current grid state to the training data
                     self.trainingDataX.push(ea);
                     // add the Q values for the current cell to the training data
@@ -965,6 +969,23 @@ export default class MainScene extends Phaser.Scene implements MainSceneType {
     getDirection(numArray) {
         let max = this.getMaxOfArray(numArray);
         return numArray.indexOf(max);
+    }
+    getBestMoveDirection(predictions: number[], possibleMoves: any[], history: number[]) {
+        const ranked = predictions
+            .map((score, direction) => ({ score, direction, move: possibleMoves[direction] }))
+            .filter((entry) => entry.move && typeof entry.move !== 'number')
+            .sort((a, b) => b.score - a.score);
+
+        if (ranked.length === 0) {
+            return 0;
+        }
+
+        const unvisited = ranked.filter((entry) => history.indexOf(entry.move.id) === -1);
+        if (unvisited.length > 0) {
+            return unvisited[0].direction;
+        }
+
+        return ranked[0].direction;
     }
     createAgents() {
         if(self.agents.length > 0){
