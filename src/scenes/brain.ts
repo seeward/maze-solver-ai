@@ -41,13 +41,20 @@ export class MazeSolver {
       inputShape: [100],
       activation: 'relu'
     }));
+    (this.model as tf.Sequential).add(tf.layers.dropout({
+      rate: 0.15
+    }));
+    (this.model as tf.Sequential).add(tf.layers.dense({
+      units: 32,
+      activation: 'relu'
+    }));
     (this.model as tf.Sequential).add(tf.layers.dense({
       units: 4,
       activation: 'linear'
     }));
 
     this.model.compile({
-      optimizer: tf.train.adam(),
+      optimizer: tf.train.adam(0.001),
       loss: 'meanSquaredError'
     });
 
@@ -55,27 +62,36 @@ export class MazeSolver {
 
   }
   async trainModel(X: number[][], y: number[][], epochs = 20): Promise<void> {
-
-    const xs = tf.tensor2d(removeDupes(X));
-    const ys = tf.tensor2d(removeDupes(y));
+    const deduped = dedupeSamples(X, y);
+    const xs = tf.tensor2d(deduped.X);
+    const ys = tf.tensor2d(deduped.y);
 
     await this.model.fit(xs, ys, {
       epochs: epochs,
       validationSplit: 0.2,
+      batchSize: 64,
+      shuffle: true,
       callbacks: {
         onEpochEnd: (epoch, logs) => {
           console.log(`Epoch ${epoch + 1}/${epochs} : loss = ${logs.loss}`);
           d.innerHTML = `Epoch ${epoch + 1}/${epochs} : loss = ${logs.loss.toFixed(4)}`;
-        }
+        },
+        onTrainEnd: () => {
+          console.log(`Training complete. Samples used: ${deduped.X.length}`);
+        },
       }
     });
 
     xs.dispose();
     ys.dispose();
   }
-  predict(X: number[][]) {
+  async predict(X: number[][]): Promise<number[]> {
     const xs = tf.tensor2d(X);
-    return this.model.predict(xs).data();
+    const prediction = this.model.predict(xs) as tf.Tensor;
+    const output = Array.from(await prediction.data());
+    xs.dispose();
+    prediction.dispose();
+    return output;
   }
   saveModel(): void {
     this.model.save('downloads://mazeSolver');
@@ -131,13 +147,28 @@ export class MazeSolver {
 }
 
 
-// function to remove all duplicates from an array
-function removeDupes(arr: any[]){
-  // find all unique values
-  const unique = arr.filter((v, i, a) => a.indexOf(v) === i);
-  return unique; 
-}
+function dedupeSamples(X: number[][], y: number[][]): { X: number[][], y: number[][] } {
+  const seen = new Set<string>();
+  const dedupedX: number[][] = [];
+  const dedupedY: number[][] = [];
 
+  for (let i = 0; i < X.length; i++) {
+    const xSample = X[i];
+    const ySample = y[i];
+    if (!xSample || !ySample) {
+      continue;
+    }
+
+    const key = `${xSample.join(',')}|${ySample.join(',')}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      dedupedX.push(xSample);
+      dedupedY.push(ySample);
+    }
+  }
+
+  return { X: dedupedX, y: dedupedY };
+}
 
 
 
